@@ -1,10 +1,9 @@
 'use client';
-import Link from 'next/link';
-import BottomNav from '../components/BottomNav';
 import { useEffect, useState } from 'react';
 import { db, auth } from '../../lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import Link from 'next/link';
+import BottomNav from '../components/BottomNav';
 
 const CATEGORIES = ['All', '🏠 Hostellers', '🚌 Day Scholars'];
 
@@ -54,7 +53,8 @@ export default function FeedPage() {
   const filtered = category === 'All' ? items : items.filter(i => i.studentType === category.replace(/^.+? /, ''));
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0d0d0d 0%, #1a1a2e 50%, #0d0d0d 100%)', fontFamily: "'Segoe UI', sans-serif", color: '#fff' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0d0d0d 0%, #1a1a2e 50%, #0d0d0d 100%)', fontFamily: "'Segoe UI', sans-serif", color: '#fff', paddingBottom: '80px' }}>
+
       <nav style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'sticky', top: 0, zIndex: 100, background: 'rgba(13,13,13,0.9)', backdropFilter: 'blur(20px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #c8f135, #ff5c35)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '900', color: '#0d0d0d' }}>V</div>
@@ -67,6 +67,7 @@ export default function FeedPage() {
       </nav>
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '28px 20px' }}>
+
         <div style={{ background: 'linear-gradient(135deg, rgba(200,241,53,0.08), rgba(255,92,53,0.08))', border: '1px solid rgba(200,241,53,0.2)', borderRadius: '20px', padding: '24px', marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <span style={{ fontSize: '20px' }}>📢</span>
@@ -136,15 +137,9 @@ export default function FeedPage() {
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(200,241,53,0.3)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
                 <div style={{ height: '170px', background: 'linear-gradient(135deg, rgba(200,241,53,0.08), rgba(255,92,53,0.08))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '56px', position: 'relative' }}>
-                  {item.imageUrl ? (
-                    <img src={item.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={item.title} />
-                  ) : '📦'}
-                  <span style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '11px', padding: '4px 10px', borderRadius: '100px', background: item.type === 'Rent' ? 'rgba(90,158,26,0.9)' : 'rgba(255,92,53,0.9)', color: '#fff', fontWeight: '700' }}>
-                    {item.type}
-                  </span>
-                  <span style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '11px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(0,0,0,0.6)', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>
-                    {item.studentType}
-                  </span>
+                  {item.imageUrl ? <img src={item.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={item.title} /> : '📦'}
+                  <span style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '11px', padding: '4px 10px', borderRadius: '100px', background: item.type === 'Rent' ? 'rgba(90,158,26,0.9)' : 'rgba(255,92,53,0.9)', color: '#fff', fontWeight: '700' }}>{item.type}</span>
+                  <span style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '11px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(0,0,0,0.6)', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{item.studentType}</span>
                 </div>
                 <div style={{ padding: '16px' }}>
                   <p style={{ fontWeight: '700', fontSize: '16px', color: '#fff', margin: '0 0 4px' }}>{item.title}</p>
@@ -173,12 +168,7 @@ export default function FeedPage() {
           </div>
         )}
       </div>
-    </div>
-    </div>
-      </div>
       <BottomNav />
     </div>
-  );
-}
   );
 }
