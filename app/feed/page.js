@@ -1,4 +1,6 @@
 'use client';
+import Link from 'next/link';
+import BottomNav from '../components/BottomNav';
 import { useEffect, useState } from 'react';
 import { db, auth } from '../../lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp } from 'firebase/firestore';
@@ -172,5 +174,11 @@ export default function FeedPage() {
         )}
       </div>
     </div>
+    </div>
+      </div>
+      <BottomNav />
+    </div>
+  );
+}
   );
 }
