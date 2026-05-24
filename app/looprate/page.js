@@ -1,13 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { db, auth } from '../../lib/firebase';
-import { collection, getDocs, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
 import BottomNav from '../components/BottomNav';
 import { uploadImage } from '../../lib/cloudinary';
-
-const POSITIVE_TAGS = ['Easy Marks', 'Good Teaching', 'Chill Faculty', 'Friendly', 'Placement Helpful', 'Easy CAT'];
-const NEGATIVE_TAGS = ['Very Strict', 'Heavy Assignments', 'Surprise Tests', 'Fast Teaching', 'Low Marks'];
 
 export default function LoopRatePage() {
   const [faculties, setFaculties] = useState([]);
@@ -32,10 +29,7 @@ export default function LoopRatePage() {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setImage(file);
-      setPreview(URL.createObjectURL(file));
-    }
+    if (file) { setImage(file); setPreview(URL.createObjectURL(file)); }
   };
 
   const addFaculty = async () => {
@@ -43,26 +37,29 @@ export default function LoopRatePage() {
     setAdding(true);
     try {
       let imageUrl = '';
-      if (image) {
-        imageUrl = await uploadImage(image);
-      }
+      if (image) imageUrl = await uploadImage(image);
       await addDoc(collection(db, 'faculties'), {
-        ...newFaculty,
-        imageUrl,
-        greenFlags: 0,
-        redFlags: 0,
-        reviewCount: 0,
+        ...newFaculty, imageUrl,
+        greenFlags: 0, redFlags: 0, reviewCount: 0,
         createdAt: serverTimestamp(),
         addedBy: auth.currentUser?.email || 'anonymous',
       });
       setNewFaculty({ name: '', school: '', subject: '' });
-      setImage(null);
-      setPreview(null);
-      setShowAdd(false);
+      setImage(null); setPreview(null); setShowAdd(false);
       fetchFaculties();
     } catch (e) {}
     setAdding(false);
   };
+
+  const deleteFaculty = async (e, id) => {
+    e.preventDefault();
+    if (!confirm('Delete this faculty?')) return;
+    await deleteDoc(doc(db, 'faculties', id));
+    setFaculties(faculties.filter(f => f.id !== id));
+  };
+
+  const isAdmin = auth.currentUser?.email === 'deepak.2024a@vitstudent.ac.in' ||
+    auth.currentUser?.email === 'deepak.rcontact@gmail.com';
 
   const filtered = faculties.filter(f =>
     f.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -102,15 +99,9 @@ export default function LoopRatePage() {
         {showAdd && (
           <div style={{ background: 'linear-gradient(135deg, rgba(200,241,53,0.08), rgba(255,92,53,0.08))', border: '1px solid rgba(200,241,53,0.2)', borderRadius: '16px', padding: '20px', marginBottom: '24px' }}>
             <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '800' }}>Add New Faculty</h3>
-
-            {/* IMAGE UPLOAD */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
               <div style={{ width: '72px', height: '72px', borderRadius: '16px', background: 'rgba(255,255,255,0.08)', border: '2px dashed rgba(255,255,255,0.2)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {preview ? (
-                  <img src={preview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="preview" />
-                ) : (
-                  <span style={{ fontSize: '28px' }}>🎓</span>
-                )}
+                {preview ? <img src={preview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="preview" /> : <span style={{ fontSize: '28px' }}>🎓</span>}
               </div>
               <div>
                 <label style={{ display: 'inline-block', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
@@ -120,7 +111,6 @@ export default function LoopRatePage() {
                 <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>Optional — faculty photo</p>
               </div>
             </div>
-
             <input value={newFaculty.name} onChange={e => setNewFaculty({ ...newFaculty, name: e.target.value })}
               placeholder="Faculty Name *"
               style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '14px', outline: 'none', fontFamily: 'inherit', marginBottom: '10px', boxSizing: 'border-box' }} />
@@ -130,7 +120,6 @@ export default function LoopRatePage() {
             <input value={newFaculty.subject} onChange={e => setNewFaculty({ ...newFaculty, subject: e.target.value })}
               placeholder="Subject (e.g. Data Structures)"
               style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '14px', outline: 'none', fontFamily: 'inherit', marginBottom: '16px', boxSizing: 'border-box' }} />
-
             <div style={{ display: 'flex', gap: '10px' }}>
               <button onClick={addFaculty} disabled={adding}
                 style={{ flex: 1, padding: '11px', background: adding ? 'rgba(255,255,255,0.08)' : 'linear-gradient(135deg, #c8f135, #a8d020)', color: adding ? 'rgba(255,255,255,0.3)' : '#0d0d0d', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: adding ? 'not-allowed' : 'pointer' }}>
@@ -160,11 +149,11 @@ export default function LoopRatePage() {
           </div>
           <div style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: '#4ade80' }}>{faculties.reduce((a, f) => a + (f.greenFlags || 0), 0)}</p>
-            <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Green Flags</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>🟢 Green Flags</p>
           </div>
           <div style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: '#f87171' }}>{faculties.reduce((a, f) => a + (f.redFlags || 0), 0)}</p>
-            <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Red Flags</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>🔴 Red Flags</p>
           </div>
         </div>
 
@@ -174,9 +163,7 @@ export default function LoopRatePage() {
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px' }}>
             <p style={{ fontSize: '48px' }}>🎓</p>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '16px' }}>
-              {search ? 'No faculty found!' : 'No faculties yet. Add the first one!'}
-            </p>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '16px' }}>{search ? 'No faculty found!' : 'No faculties yet. Add the first one!'}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -184,6 +171,7 @@ export default function LoopRatePage() {
               const score = getScore(faculty);
               const scoreColor = getScoreColor(score);
               const total = (faculty.greenFlags || 0) + (faculty.redFlags || 0);
+              const canDelete = isAdmin || auth.currentUser?.email === faculty.addedBy;
               return (
                 <Link key={faculty.id} href={"/looprate/" + faculty.id} style={{ textDecoration: 'none' }}>
                   <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '18px', cursor: 'pointer', transition: 'border-color 0.2s, transform 0.2s' }}
@@ -192,9 +180,7 @@ export default function LoopRatePage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
                         <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(135deg, #1a1a2e, #16213e)', border: '2px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
-                          {faculty.imageUrl ? (
-                            <img src={faculty.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={faculty.name} />
-                          ) : '🎓'}
+                          {faculty.imageUrl ? <img src={faculty.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={faculty.name} /> : '🎓'}
                         </div>
                         <div>
                           <p style={{ margin: 0, fontWeight: '800', fontSize: '16px', color: '#fff' }}>{faculty.name}</p>
@@ -202,20 +188,26 @@ export default function LoopRatePage() {
                           {faculty.subject && <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>{faculty.subject}</p>}
                         </div>
                       </div>
-                      <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: `3px solid ${scoreColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
                           <span style={{ fontSize: '13px', fontWeight: '900', color: scoreColor }}>{total === 0 ? '?' : score + '%'}</span>
                         </div>
+                        {canDelete && (
+                          <button onClick={(e) => deleteFaculty(e, faculty.id)}
+                            style={{ background: 'rgba(255,92,53,0.1)', color: '#ff5c35', border: '1px solid rgba(255,92,53,0.2)', borderRadius: '8px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }}>
+                            🗑️ Delete
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '12px', marginTop: '14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: '8px', padding: '6px 12px' }}>
                         <span>🟢</span>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80' }}>{faculty.greenFlags || 0}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80' }}>{faculty.greenFlags || 0} Green</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px', padding: '6px 12px' }}>
                         <span>🔴</span>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#f87171' }}>{faculty.redFlags || 0}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#f87171' }}>{faculty.redFlags || 0} Red</span>
                       </div>
                       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
                         <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{total} votes · tap to review →</span>
