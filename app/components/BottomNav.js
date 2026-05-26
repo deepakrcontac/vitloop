@@ -7,7 +7,7 @@ export default function BottomNav() {
 
   const tabs = [
     { href: '/feed', icon: '🏪', label: 'Market' },
-    { href: '/looprate', icon: '⭐', label: 'LoopRate' },
+    { href: '/looprate', icon: '⭐', label: 'Faculty Review' },
     { href: '/sell', icon: '➕', label: 'Sell', special: true },
     { href: '/chat', icon: '💬', label: 'Chats' },
     { href: '/profile', icon: '👤', label: 'Profile' },
