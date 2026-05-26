@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { db, auth } from '../../lib/firebase';
 import {
   collection, getDocs, addDoc, deleteDoc, doc,
@@ -10,6 +11,10 @@ import BottomNav from '../components/BottomNav';
 
 const CATEGORIES = ['All', '🏠 Hostellers', '🚌 Day Scholars'];
 
+// Random color for anonymous avatars
+const COLORS = ['#6C63FF','#00D4FF','#ff5c35','#c8f135','#f59e0b','#ec4899','#10b981'];
+const getColor = (uid) => COLORS[(uid?.charCodeAt(0) || 0) % COLORS.length];
+
 export default function FeedPage() {
   const [items, setItems] = useState([]);
   const [questions, setQuestions] = useState([]);
@@ -19,14 +24,12 @@ export default function FeedPage() {
   const [posting, setPosting] = useState(false);
   const [openReply, setOpenReply] = useState(null);
   const [replyText, setReplyText] = useState({});
-  const [chatTarget, setChatTarget] = useState(null);
-  const [chatMessages, setChatMessages] = useState([]);
-  const [chatText, setChatText] = useState('');
+  const [showAllQ, setShowAllQ] = useState(false);
   const user = auth.currentUser;
+  const router = useRouter();
 
   useEffect(() => {
     fetchListings();
-    // Realtime needboard
     const q = query(collection(db, 'needboard'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, snap => {
       setQuestions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -50,9 +53,9 @@ export default function FeedPage() {
     try {
       await addDoc(collection(db, 'needboard'), {
         question: newQ,
-        askedBy: user.displayName || user.email?.split('@')[0],
+        askedBy: 'Anonymous Vitian',
         askedByUid: user.uid,
-        askedByPhoto: user.photoURL || null,
+        askedByPhoto: null,
         replies: [],
         createdAt: serverTimestamp(),
       });
@@ -67,9 +70,9 @@ export default function FeedPage() {
     await updateDoc(ref, {
       replies: arrayUnion({
         text: replyText[qId],
-        by: user.displayName || user.email?.split('@')[0],
+        by: 'Anonymous Vitian',
         byUid: user.uid,
-        byPhoto: user.photoURL || null,
+        byPhoto: null,
         at: new Date().toISOString(),
       })
     });
@@ -77,29 +80,8 @@ export default function FeedPage() {
     setOpenReply(null);
   };
 
-  // Chat logic
-  const openChat = (targetUid, targetName, targetPhoto) => {
-    setChatTarget({ uid: targetUid, name: targetName, photo: targetPhoto });
-    const chatId = [user?.uid, targetUid].sort().join('_');
-    const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('createdAt', 'asc'));
-    onSnapshot(q, snap => {
-      setChatMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-  };
-
-  const sendChat = async () => {
-    if (!chatText.trim() || !user || !chatTarget) return;
-    const chatId = [user.uid, chatTarget.uid].sort().join('_');
-    await addDoc(collection(db, 'chats', chatId, 'messages'), {
-      text: chatText,
-      from: user.uid,
-      fromName: user.displayName || user.email?.split('@')[0],
-      createdAt: serverTimestamp(),
-    });
-    setChatText('');
-  };
-
   const filtered = category === 'All' ? items : items.filter(i => i.studentType === category.replace(/^.+? /, ''));
+  const visibleQuestions = showAllQ ? questions : questions.slice(0, 2);
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #07070f 0%, #0d0d1a 50%, #07070f 100%)', fontFamily: "'Segoe UI', sans-serif", color: '#fff', paddingBottom: '80px' }}>
@@ -107,11 +89,11 @@ export default function FeedPage() {
       {/* NAV */}
       <nav style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, zIndex: 100, background: 'rgba(7,7,15,0.95)', backdropFilter: 'blur(20px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '22px', cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>←</button>
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none">
             <defs>
               <linearGradient id="lg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#c8f135"/>
-                <stop offset="100%" stopColor="#ff5c35"/>
+                <stop offset="0%" stopColor="#c8f135"/><stop offset="100%" stopColor="#ff5c35"/>
               </linearGradient>
             </defs>
             <polygon points="32,4 58,18 58,46 32,60 6,46 6,18" fill="url(#lg)" opacity="0.15" stroke="url(#lg)" strokeWidth="2"/>
@@ -128,18 +110,18 @@ export default function FeedPage() {
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '28px 20px' }}>
 
-        {/* ===== NEED BOARD Q&A ===== */}
+        {/* NEED BOARD */}
         <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.1), rgba(0,212,255,0.06))', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '20px', padding: '24px', marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <span style={{ fontSize: '20px' }}>🎓</span>
             <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>Ask Seniors — Need Board</h2>
             <span style={{ background: 'rgba(108,99,255,0.25)', color: '#a78bfa', fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '100px' }}>LIVE</span>
+            <span style={{ background: 'rgba(0,0,0,0.3)', color: 'rgba(255,255,255,0.4)', fontSize: '11px', padding: '3px 10px', borderRadius: '100px', marginLeft: 'auto' }}>🔒 Anonymous</span>
           </div>
 
-          {/* Ask input */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
             <input value={newQ} onChange={e => setNewQ(e.target.value)}
-              placeholder="Ask anything — seniors will answer you! 💬"
+              placeholder="Ask anything anonymously — seniors will answer! 💬"
               onKeyDown={e => e.key === 'Enter' && postQuestion()}
               style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '10px', padding: '12px 16px', color: '#fff', fontSize: '14px', outline: 'none' }} />
             <button onClick={postQuestion} disabled={posting}
@@ -148,54 +130,56 @@ export default function FeedPage() {
             </button>
           </div>
 
-          {/* Questions list */}
           {questions.length === 0 && (
             <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', textAlign: 'center', padding: '8px' }}>No questions yet. Be the first to ask!</p>
           )}
-          {questions.map(q => (
+
+          {visibleQuestions.map(q => (
             <div key={q.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '14px', padding: '16px', marginBottom: '12px', border: '1px solid rgba(108,99,255,0.15)' }}>
-              {/* Question header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                {q.askedByPhoto
-                  ? <img src={q.askedByPhoto} onClick={() => q.askedByUid !== user?.uid && openChat(q.askedByUid, q.askedBy, q.askedByPhoto)}
-                      style={{ width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', border: '2px solid #6C63FF' }} />
-                  : <div onClick={() => q.askedByUid !== user?.uid && openChat(q.askedByUid, q.askedBy, null)}
-                      style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#6C63FF,#00D4FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', cursor: 'pointer' }}>
-                      {(q.askedBy || 'U')[0].toUpperCase()}
-                    </div>
-                }
-                <span style={{ color: '#a78bfa', fontSize: '13px', fontWeight: '600' }}>{q.askedBy}</span>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: getColor(q.askedByUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '14px', flexShrink: 0 }}>
+                  🎓
+                </div>
+                <span style={{ color: '#a78bfa', fontSize: '13px', fontWeight: '600' }}>Anonymous Vitian</span>
                 <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', marginLeft: 'auto' }}>
-                  {q.createdAt?.toDate?.()?.toLocaleDateString?.() || ''}
+                  {q.createdAt?.toDate?.()?.toLocaleString?.('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) || ''}
                 </span>
               </div>
 
               <p style={{ color: '#e2e8f0', fontSize: '15px', margin: '0 0 12px' }}>{q.question}</p>
 
-              {/* Replies */}
               {(q.replies || []).map((r, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: 'rgba(0,0,0,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '6px', borderLeft: '3px solid #6C63FF' }}>
-                  <div onClick={() => r.byUid !== user?.uid && openChat(r.byUid, r.by, r.byPhoto)}
-                    style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#00D4FF,#6C63FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '11px', cursor: 'pointer', flexShrink: 0 }}>
-                    {r.byPhoto ? <img src={r.byPhoto} style={{ width: 26, height: 26, borderRadius: '50%' }} /> : (r.by || 'U')[0].toUpperCase()}
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: getColor(r.byUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>
+                    🎓
                   </div>
-                  <div>
-                    <span style={{ color: '#00D4FF', fontSize: '12px', fontWeight: '600' }}>{r.by} </span>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ color: '#00D4FF', fontSize: '12px', fontWeight: '600' }}>Anonymous Vitian </span>
                     <span style={{ color: '#cbd5e1', fontSize: '13px' }}>{r.text}</span>
+                    <p style={{ margin: '4px 0 0', fontSize: '10px', color: 'rgba(255,255,255,0.25)' }}>
+                      {r.at ? new Date(r.at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                    </p>
                   </div>
                 </div>
               ))}
 
-              {/* Reply button */}
-              <button onClick={() => setOpenReply(openReply === q.id ? null : q.id)}
-                style={{ background: 'transparent', border: '1px solid rgba(108,99,255,0.3)', color: '#a78bfa', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', marginTop: '4px', fontWeight: '600' }}>
-                💬 Reply ({(q.replies || []).length})
-              </button>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <button onClick={() => setOpenReply(openReply === q.id ? null : q.id)}
+                  style={{ background: 'transparent', border: '1px solid rgba(108,99,255,0.3)', color: '#a78bfa', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
+                  💬 Reply ({(q.replies || []).length})
+                </button>
+                {user?.uid === q.askedByUid && (
+                  <button onClick={async () => { if (confirm('Delete?')) await deleteDoc(doc(db, 'needboard', q.id)); }}
+                    style={{ background: 'transparent', border: '1px solid rgba(255,92,53,0.3)', color: '#ff5c35', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
+                    🗑 Delete
+                  </button>
+                )}
+              </div>
 
               {openReply === q.id && (
                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                   <input value={replyText[q.id] || ''} onChange={e => setReplyText(prev => ({ ...prev, [q.id]: e.target.value }))}
-                    placeholder="Write your answer..."
+                    placeholder="Reply anonymously..."
                     onKeyDown={e => e.key === 'Enter' && postReply(q.id)}
                     style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '8px', padding: '9px 12px', color: '#fff', fontSize: '13px', outline: 'none' }} />
                   <button onClick={() => postReply(q.id)}
@@ -204,6 +188,14 @@ export default function FeedPage() {
               )}
             </div>
           ))}
+
+          {/* Show More / Less */}
+          {questions.length > 2 && (
+            <button onClick={() => showAllQ ? setShowAllQ(false) : router.push('/chat')}
+              style={{ width: '100%', background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.3)', color: '#a78bfa', borderRadius: '10px', padding: '12px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', marginTop: '4px' }}>
+              {showAllQ ? '▲ Show Less' : `👀 See all ${questions.length} questions →`}
+            </button>
+          )}
         </div>
 
         {/* CATEGORY FILTER */}
@@ -241,63 +233,21 @@ export default function FeedPage() {
                 </div>
                 <div style={{ padding: '16px' }}>
                   <p style={{ fontWeight: '700', fontSize: '16px', color: '#fff', margin: '0 0 4px' }}>{item.title}</p>
-                  <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px' }}>📍 {item.hostel}</p>
+                  <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '0 0 4px' }}>📍 {item.hostel}</p>
+                  <p style={{ fontSize: '11px', color: 'rgba(108,99,255,0.8)', margin: '0 0 12px' }}>🔒 Anonymous Vitian</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <span style={{ fontWeight: '800', color: '#c8f135', fontSize: '20px' }}>₹{item.price}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <a href={"https://wa.me/91" + item.phone} target="_blank"
-                      style={{ flex: 1, background: 'rgba(37,211,102,0.1)', color: '#25d366', border: '1px solid rgba(37,211,102,0.2)', borderRadius: '8px', padding: '9px', fontSize: '13px', textDecoration: 'none', fontWeight: '600', textAlign: 'center' }}>
-                      💬 WhatsApp
-                    </a>
-                    <a href={"tel:" + item.phone}
-                      style={{ flex: 1, background: 'rgba(255,92,53,0.1)', color: '#ff5c35', border: '1px solid rgba(255,92,53,0.2)', borderRadius: '8px', padding: '9px', fontSize: '13px', textDecoration: 'none', fontWeight: '600', textAlign: 'center' }}>
-                      📞 Call
-                    </a>
-                  </div>
+                  <Link href={`/chat/${item.id}`}
+                    style={{ display: 'block', background: 'linear-gradient(135deg, #6C63FF, #00D4FF)', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px', fontSize: '13px', textDecoration: 'none', fontWeight: '700', textAlign: 'center' }}>
+                    💬 I'm Interested
+                  </Link>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* ===== CHAT POPUP ===== */}
-      {chatTarget && (
-        <div style={{ position: 'fixed', bottom: 90, right: 20, width: 310, background: '#0d0d1a', borderRadius: '18px', border: '1px solid rgba(108,99,255,0.4)', boxShadow: '0 8px 40px rgba(108,99,255,0.25)', zIndex: 1000, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Chat header */}
-          <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.2), rgba(0,212,255,0.1))', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#6C63FF,#00D4FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '12px' }}>
-                {chatTarget.photo ? <img src={chatTarget.photo} style={{ width: 28, height: 28, borderRadius: '50%' }} /> : chatTarget.name[0]}
-              </div>
-              <span style={{ color: '#e2e8f0', fontWeight: '600', fontSize: '14px' }}>{chatTarget.name}</span>
-            </div>
-            <button onClick={() => setChatTarget(null)} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>✕</button>
-          </div>
-
-          {/* Messages */}
-          <div style={{ height: 240, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {chatMessages.length === 0 && (
-              <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '12px', textAlign: 'center', marginTop: '80px' }}>Start the conversation 👋</p>
-            )}
-            {chatMessages.map(m => (
-              <div key={m.id} style={{ alignSelf: m.from === user?.uid ? 'flex-end' : 'flex-start', background: m.from === user?.uid ? 'linear-gradient(135deg, #6C63FF, #00D4FF)' : 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: '12px', padding: '8px 12px', maxWidth: '80%', fontSize: '13px' }}>
-                {m.text}
-              </div>
-            ))}
-          </div>
-
-          {/* Input */}
-          <div style={{ display: 'flex', gap: '8px', padding: '12px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-            <input value={chatText} onChange={e => setChatText(e.target.value)}
-              placeholder="Type a message..." onKeyDown={e => e.key === 'Enter' && sendChat()}
-              style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '8px', padding: '8px 10px', color: '#fff', fontSize: '13px', outline: 'none' }} />
-            <button onClick={sendChat} style={{ background: 'linear-gradient(135deg, #6C63FF, #00D4FF)', border: 'none', borderRadius: '8px', padding: '8px 14px', color: '#fff', fontWeight: '700', cursor: 'pointer' }}>→</button>
-          </div>
-        </div>
-      )}
-
       <BottomNav />
     </div>
   );
