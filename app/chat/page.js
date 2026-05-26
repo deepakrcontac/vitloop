@@ -8,6 +8,9 @@ import {
 } from 'firebase/firestore';
 import BottomNav from '../components/BottomNav';
 
+const COLORS = ['#6C63FF','#00D4FF','#ff5c35','#c8f135','#f59e0b','#ec4899','#10b981'];
+const getColor = (uid) => COLORS[(uid?.charCodeAt(0) || 0) % COLORS.length];
+
 export default function ChatPage() {
   const [questions, setQuestions] = useState([]);
   const [newQ, setNewQ] = useState('');
@@ -32,9 +35,9 @@ export default function ChatPage() {
     try {
       await addDoc(collection(db, 'needboard'), {
         question: newQ,
-        askedBy: user.displayName || user.email?.split('@')[0],
+        askedBy: 'Anonymous Vitian',
         askedByUid: user.uid,
-        askedByPhoto: user.photoURL || null,
+        askedByPhoto: null,
         replies: [],
         createdAt: serverTimestamp(),
       });
@@ -49,9 +52,9 @@ export default function ChatPage() {
     await updateDoc(ref, {
       replies: arrayUnion({
         text: replyText[qId],
-        by: user.displayName || user.email?.split('@')[0],
+        by: 'Anonymous Vitian',
         byUid: user.uid,
-        byPhoto: user.photoURL || null,
+        byPhoto: null,
         at: new Date().toISOString(),
       })
     });
@@ -100,10 +103,11 @@ export default function ChatPage() {
             <span style={{ fontSize: '20px' }}>🎓</span>
             <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>Ask Seniors — Need Board</h2>
             <span style={{ background: 'rgba(108,99,255,0.25)', color: '#a78bfa', fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '100px' }}>LIVE</span>
+            <span style={{ background: 'rgba(0,0,0,0.3)', color: 'rgba(255,255,255,0.4)', fontSize: '11px', padding: '3px 10px', borderRadius: '100px', marginLeft: 'auto' }}>🔒 Anonymous</span>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <input value={newQ} onChange={e => setNewQ(e.target.value)}
-              placeholder="Ask anything — seniors will answer you! 💬"
+              placeholder="Ask anything anonymously — seniors will answer! 💬"
               onKeyDown={e => e.key === 'Enter' && postQuestion()}
               style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '10px', padding: '12px 16px', color: '#fff', fontSize: '14px', outline: 'none' }} />
             <button onClick={postQuestion} disabled={posting}
@@ -119,13 +123,13 @@ export default function ChatPage() {
 
         {questions.map(q => (
           <div key={q.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '14px', padding: '16px', marginBottom: '12px', border: '1px solid rgba(108,99,255,0.15)' }}>
+
+            {/* Header — always anonymous */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#6C63FF,#00D4FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', flexShrink: 0 }}>
-                {q.askedByPhoto
-                  ? <img src={q.askedByPhoto} style={{ width: 32, height: 32, borderRadius: '50%' }} />
-                  : (q.askedBy || 'U')[0].toUpperCase()}
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: getColor(q.askedByUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '16px', flexShrink: 0 }}>
+                🎓
               </div>
-              <span style={{ color: '#a78bfa', fontSize: '13px', fontWeight: '600' }}>{q.askedBy}</span>
+              <span style={{ color: '#a78bfa', fontSize: '13px', fontWeight: '600' }}>Anonymous Vitian</span>
               <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', marginLeft: 'auto' }}>
                 {q.createdAt?.toDate?.()?.toLocaleString?.('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) || ''}
               </span>
@@ -133,13 +137,14 @@ export default function ChatPage() {
 
             <p style={{ color: '#e2e8f0', fontSize: '15px', margin: '0 0 12px' }}>{q.question}</p>
 
+            {/* Replies — always anonymous */}
             {(q.replies || []).map((r, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: 'rgba(0,0,0,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '6px', borderLeft: '3px solid #6C63FF' }}>
-                <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#00D4FF,#6C63FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>
-                  {r.byPhoto ? <img src={r.byPhoto} style={{ width: 26, height: 26, borderRadius: '50%' }} /> : (r.by || 'U')[0].toUpperCase()}
+                <div style={{ width: 26, height: 26, borderRadius: '50%', background: getColor(r.byUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>
+                  🎓
                 </div>
                 <div style={{ flex: 1 }}>
-                  <span style={{ color: '#00D4FF', fontSize: '12px', fontWeight: '600' }}>{r.by} </span>
+                  <span style={{ color: '#00D4FF', fontSize: '12px', fontWeight: '600' }}>Anonymous Vitian </span>
                   <span style={{ color: '#cbd5e1', fontSize: '13px' }}>{r.text}</span>
                   <p style={{ margin: '4px 0 0', fontSize: '10px', color: 'rgba(255,255,255,0.25)' }}>
                     {r.at ? new Date(r.at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
@@ -164,7 +169,7 @@ export default function ChatPage() {
             {openReply === q.id && (
               <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                 <input value={replyText[q.id] || ''} onChange={e => setReplyText(prev => ({ ...prev, [q.id]: e.target.value }))}
-                  placeholder="Write your answer..."
+                  placeholder="Reply anonymously..."
                   onKeyDown={e => e.key === 'Enter' && postReply(q.id)}
                   style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '8px', padding: '9px 12px', color: '#fff', fontSize: '13px', outline: 'none' }} />
                 <button onClick={() => postReply(q.id)}
