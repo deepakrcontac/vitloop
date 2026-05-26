@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { db, storage, auth } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadImage } from '../../lib/cloudinary';
 import { useRouter } from 'next/navigation';
 
 export default function SellPage() {
@@ -27,10 +27,8 @@ export default function SellPage() {
     try {
       let imageUrl = '';
       if (image) {
-        const imageRef = ref(storage, `listings/${Date.now()}_${image.name}`);
-        await uploadBytes(imageRef, image);
-        imageUrl = await getDownloadURL(imageRef);
-      }
+  imageUrl = await uploadImage(image);
+}
       await addDoc(collection(db, 'listings'), {
         title, price: Number(price), studentType, type,
         hostel, phone, description, imageUrl,
