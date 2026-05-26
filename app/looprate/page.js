@@ -15,6 +15,7 @@ export default function LoopRatePage() {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [adding, setAdding] = useState(false);
+  const [copied, setCopied] = useState(null);
 
   useEffect(() => { fetchFaculties(); }, []);
 
@@ -58,6 +59,21 @@ export default function LoopRatePage() {
     setFaculties(faculties.filter(f => f.id !== id));
   };
 
+  const shareWhatsApp = (e, faculty) => {
+    e.preventDefault();
+    const url = `https://vitloop.vercel.app/looprate/${faculty.id}`;
+    const msg = `⭐ Rate ${faculty.name} on VITLoop Faculty Review!\n${faculty.school}\n\nVote & see what others think 👇\n${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  const copyLink = (e, faculty) => {
+    e.preventDefault();
+    const url = `https://vitloop.vercel.app/looprate/${faculty.id}`;
+    navigator.clipboard.writeText(url);
+    setCopied(faculty.id);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
   const isAdmin = auth.currentUser?.email === 'deepak.2024a@vitstudent.ac.in' ||
     auth.currentUser?.email === 'deepak.rcontact@gmail.com';
 
@@ -84,7 +100,7 @@ export default function LoopRatePage() {
 
       <nav style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'sticky', top: 0, zIndex: 100, background: 'rgba(13,13,13,0.95)', backdropFilter: 'blur(20px)' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '900' }}>Loop<span style={{ color: '#c8f135' }}>Rate</span> ⭐</h1>
+          <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '900' }}>Faculty <span style={{ color: '#c8f135' }}>Review</span> ⭐</h1>
           <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Rate your faculty · Help juniors choose wisely</p>
         </div>
         <button onClick={() => setShowAdd(!showAdd)}
@@ -177,6 +193,7 @@ export default function LoopRatePage() {
                   <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '18px', cursor: 'pointer', transition: 'border-color 0.2s, transform 0.2s' }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(200,241,53,0.3)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
                         <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(135deg, #1a1a2e, #16213e)', border: '2px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
@@ -200,7 +217,8 @@ export default function LoopRatePage() {
                         )}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '12px', marginTop: '14px' }}>
+
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: '8px', padding: '6px 12px' }}>
                         <span>🟢</span>
                         <span style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80' }}>{faculty.greenFlags || 0} Green</span>
@@ -209,7 +227,18 @@ export default function LoopRatePage() {
                         <span>🔴</span>
                         <span style={{ fontSize: '13px', fontWeight: '700', color: '#f87171' }}>{faculty.redFlags || 0} Red</span>
                       </div>
-                      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+
+                      {/* SHARE BUTTONS */}
+                      <button onClick={(e) => shareWhatsApp(e, faculty)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: '8px', padding: '6px 12px', color: '#25d366', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                        <span>📲</span> Share
+                      </button>
+                      <button onClick={(e) => copyLink(e, faculty)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px', background: copied === faculty.id ? 'rgba(200,241,53,0.15)' : 'rgba(255,255,255,0.06)', border: `1px solid ${copied === faculty.id ? 'rgba(200,241,53,0.4)' : 'rgba(255,255,255,0.12)'}`, borderRadius: '8px', padding: '6px 12px', color: copied === faculty.id ? '#c8f135' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                        <span>{copied === faculty.id ? '✅' : '🔗'}</span> {copied === faculty.id ? 'Copied!' : 'Copy Link'}
+                      </button>
+
+                      <div style={{ marginLeft: 'auto' }}>
                         <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{total} votes · tap to review →</span>
                       </div>
                     </div>
