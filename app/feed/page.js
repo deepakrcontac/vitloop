@@ -10,10 +10,9 @@ import Link from 'next/link';
 import BottomNav from '../components/BottomNav';
 
 const CATEGORIES = ['All', '🏠 Hostellers', '🚌 Day Scholars'];
-
-// Random color for anonymous avatars
 const COLORS = ['#6C63FF','#00D4FF','#ff5c35','#c8f135','#f59e0b','#ec4899','#10b981'];
 const getColor = (uid) => COLORS[(uid?.charCodeAt(0) || 0) % COLORS.length];
+const ADMIN_EMAILS = ['deepak.2024a@vitstudent.ac.in', 'deepak.rcontact@gmail.com'];
 
 export default function FeedPage() {
   const [items, setItems] = useState([]);
@@ -27,6 +26,7 @@ export default function FeedPage() {
   const [showAllQ, setShowAllQ] = useState(false);
   const user = auth.currentUser;
   const router = useRouter();
+  const isAdmin = ADMIN_EMAILS.includes(user?.email);
 
   useEffect(() => {
     fetchListings();
@@ -80,6 +80,14 @@ export default function FeedPage() {
     setOpenReply(null);
   };
 
+  const deleteListing = async (e, id) => {
+    e.preventDefault();
+    if (confirm('Delete this listing?')) {
+      await deleteDoc(doc(db, 'listings', id));
+      setItems(items.filter(i => i.id !== id));
+    }
+  };
+
   const filtered = category === 'All' ? items : items.filter(i => i.studentType === category.replace(/^.+? /, ''));
   const visibleQuestions = showAllQ ? questions : questions.slice(0, 2);
 
@@ -105,7 +113,10 @@ export default function FeedPage() {
           </svg>
           <span style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '-0.5px' }}>VIT<span style={{ color: '#ff5c35' }}>Loop</span></span>
         </div>
-        <Link href="/sell" style={{ background: 'linear-gradient(135deg, #c8f135, #a8d020)', color: '#0d0d0d', padding: '9px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: '700', fontSize: '14px' }}>+ List Item</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {isAdmin && <span style={{ background: 'rgba(255,92,53,0.15)', color: '#ff5c35', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '100px', border: '1px solid rgba(255,92,53,0.3)' }}>👑 Admin</span>}
+          <Link href="/sell" style={{ background: 'linear-gradient(135deg, #c8f135, #a8d020)', color: '#0d0d0d', padding: '9px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: '700', fontSize: '14px' }}>+ List Item</Link>
+        </div>
       </nav>
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '28px 20px' }}>
@@ -137,9 +148,7 @@ export default function FeedPage() {
           {visibleQuestions.map(q => (
             <div key={q.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '14px', padding: '16px', marginBottom: '12px', border: '1px solid rgba(108,99,255,0.15)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: getColor(q.askedByUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '14px', flexShrink: 0 }}>
-                  🎓
-                </div>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: getColor(q.askedByUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '14px', flexShrink: 0 }}>🎓</div>
                 <span style={{ color: '#a78bfa', fontSize: '13px', fontWeight: '600' }}>Anonymous Vitian</span>
                 <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', marginLeft: 'auto' }}>
                   {q.createdAt?.toDate?.()?.toLocaleString?.('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) || ''}
@@ -150,9 +159,7 @@ export default function FeedPage() {
 
               {(q.replies || []).map((r, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: 'rgba(0,0,0,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '6px', borderLeft: '3px solid #6C63FF' }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: getColor(r.byUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>
-                    🎓
-                  </div>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: getColor(r.byUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>🎓</div>
                   <div style={{ flex: 1 }}>
                     <span style={{ color: '#00D4FF', fontSize: '12px', fontWeight: '600' }}>Anonymous Vitian </span>
                     <span style={{ color: '#cbd5e1', fontSize: '13px' }}>{r.text}</span>
@@ -168,10 +175,10 @@ export default function FeedPage() {
                   style={{ background: 'transparent', border: '1px solid rgba(108,99,255,0.3)', color: '#a78bfa', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
                   💬 Reply ({(q.replies || []).length})
                 </button>
-                {user?.uid === q.askedByUid && (
+                {(isAdmin || user?.uid === q.askedByUid) && (
                   <button onClick={async () => { if (confirm('Delete?')) await deleteDoc(doc(db, 'needboard', q.id)); }}
                     style={{ background: 'transparent', border: '1px solid rgba(255,92,53,0.3)', color: '#ff5c35', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
-                    🗑 Delete
+                    🗑 {isAdmin ? 'Admin Delete' : 'Delete'}
                   </button>
                 )}
               </div>
@@ -189,7 +196,6 @@ export default function FeedPage() {
             </div>
           ))}
 
-          {/* Show More / Less */}
           {questions.length > 2 && (
             <button onClick={() => showAllQ ? setShowAllQ(false) : router.push('/chat')}
               style={{ width: '100%', background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.3)', color: '#a78bfa', borderRadius: '10px', padding: '12px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', marginTop: '4px' }}>
@@ -230,6 +236,13 @@ export default function FeedPage() {
                   {item.imageUrl ? <img src={item.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={item.title} /> : '📦'}
                   <span style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '11px', padding: '4px 10px', borderRadius: '100px', background: item.type === 'Rent' ? 'rgba(90,158,26,0.9)' : 'rgba(255,92,53,0.9)', color: '#fff', fontWeight: '700' }}>{item.type}</span>
                   <span style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '11px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(0,0,0,0.6)', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{item.studentType}</span>
+                  {/* Admin delete on image */}
+                  {isAdmin && (
+                    <button onClick={(e) => deleteListing(e, item.id)}
+                      style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(255,92,53,0.9)', border: 'none', borderRadius: '8px', padding: '4px 10px', color: '#fff', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                      🗑 Delete
+                    </button>
+                  )}
                 </div>
                 <div style={{ padding: '16px' }}>
                   <p style={{ fontWeight: '700', fontSize: '16px', color: '#fff', margin: '0 0 4px' }}>{item.title}</p>

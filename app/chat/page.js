@@ -10,6 +10,7 @@ import BottomNav from '../components/BottomNav';
 
 const COLORS = ['#6C63FF','#00D4FF','#ff5c35','#c8f135','#f59e0b','#ec4899','#10b981'];
 const getColor = (uid) => COLORS[(uid?.charCodeAt(0) || 0) % COLORS.length];
+const ADMIN_EMAILS = ['deepak.2024a@vitstudent.ac.in', 'deepak.rcontact@gmail.com'];
 
 export default function ChatPage() {
   const [questions, setQuestions] = useState([]);
@@ -19,6 +20,7 @@ export default function ChatPage() {
   const [replyText, setReplyText] = useState({});
   const user = auth.currentUser;
   const router = useRouter();
+  const isAdmin = ADMIN_EMAILS.includes(user?.email);
 
   useEffect(() => {
     const q = query(collection(db, 'needboard'), orderBy('createdAt', 'desc'));
@@ -71,18 +73,15 @@ export default function ChatPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #07070f 0%, #0d0d1a 50%, #07070f 100%)', fontFamily: "'Segoe UI', sans-serif", color: '#fff', paddingBottom: '80px' }}>
 
-      {/* NAV */}
       <nav style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, zIndex: 100, background: 'rgba(7,7,15,0.95)', backdropFilter: 'blur(20px)' }}>
         <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '22px', cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>←</button>
         <svg width="130" height="38" viewBox="0 0 220 60" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="blueG2" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#1a6fd4"/>
-              <stop offset="100%" stopColor="#00c8c8"/>
+              <stop offset="0%" stopColor="#1a6fd4"/><stop offset="100%" stopColor="#00c8c8"/>
             </linearGradient>
             <linearGradient id="orangeG2" x1="30" y1="0" x2="90" y2="60" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#f5a623"/>
-              <stop offset="100%" stopColor="#f76b1c"/>
+              <stop offset="0%" stopColor="#f5a623"/><stop offset="100%" stopColor="#f76b1c"/>
             </linearGradient>
           </defs>
           <ellipse cx="22" cy="30" rx="15" ry="15" fill="none" stroke="url(#blueG2)" strokeWidth="5"/>
@@ -94,10 +93,10 @@ export default function ChatPage() {
           </text>
         </svg>
         <span style={{ color: '#a78bfa', fontSize: '14px', fontWeight: '600', marginLeft: '8px' }}>💬 Help Board</span>
+        {isAdmin && <span style={{ background: 'rgba(255,92,53,0.15)', color: '#ff5c35', fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '100px', border: '1px solid rgba(255,92,53,0.3)', marginLeft: 'auto' }}>👑 Admin</span>}
       </nav>
 
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '28px 20px' }}>
-
         <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.1), rgba(0,212,255,0.06))', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '20px', padding: '24px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <span style={{ fontSize: '20px' }}>🎓</span>
@@ -122,13 +121,9 @@ export default function ChatPage() {
         )}
 
         {questions.map(q => (
-          <div key={q.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '14px', padding: '16px', marginBottom: '12px', border: '1px solid rgba(108,99,255,0.15)' }}>
-
-            {/* Header — always anonymous */}
+          <div key={q.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '14px', padding: '16px', marginBottom: '12px', border: `1px solid ${isAdmin ? 'rgba(255,92,53,0.15)' : 'rgba(108,99,255,0.15)'}` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: getColor(q.askedByUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '16px', flexShrink: 0 }}>
-                🎓
-              </div>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: getColor(q.askedByUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '16px', flexShrink: 0 }}>🎓</div>
               <span style={{ color: '#a78bfa', fontSize: '13px', fontWeight: '600' }}>Anonymous Vitian</span>
               <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', marginLeft: 'auto' }}>
                 {q.createdAt?.toDate?.()?.toLocaleString?.('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) || ''}
@@ -137,12 +132,9 @@ export default function ChatPage() {
 
             <p style={{ color: '#e2e8f0', fontSize: '15px', margin: '0 0 12px' }}>{q.question}</p>
 
-            {/* Replies — always anonymous */}
             {(q.replies || []).map((r, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: 'rgba(0,0,0,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '6px', borderLeft: '3px solid #6C63FF' }}>
-                <div style={{ width: 26, height: 26, borderRadius: '50%', background: getColor(r.byUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>
-                  🎓
-                </div>
+                <div style={{ width: 26, height: 26, borderRadius: '50%', background: getColor(r.byUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>🎓</div>
                 <div style={{ flex: 1 }}>
                   <span style={{ color: '#00D4FF', fontSize: '12px', fontWeight: '600' }}>Anonymous Vitian </span>
                   <span style={{ color: '#cbd5e1', fontSize: '13px' }}>{r.text}</span>
@@ -158,10 +150,10 @@ export default function ChatPage() {
                 style={{ background: 'transparent', border: '1px solid rgba(108,99,255,0.3)', color: '#a78bfa', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
                 💬 Reply ({(q.replies || []).length})
               </button>
-              {user?.uid === q.askedByUid && (
+              {(isAdmin || user?.uid === q.askedByUid) && (
                 <button onClick={() => deleteQuestion(q.id)}
                   style={{ background: 'transparent', border: '1px solid rgba(255,92,53,0.3)', color: '#ff5c35', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
-                  🗑 Delete
+                  🗑 {isAdmin && user?.uid !== q.askedByUid ? 'Admin Delete' : 'Delete'}
                 </button>
               )}
             </div>
@@ -173,9 +165,7 @@ export default function ChatPage() {
                   onKeyDown={e => e.key === 'Enter' && postReply(q.id)}
                   style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '8px', padding: '9px 12px', color: '#fff', fontSize: '13px', outline: 'none' }} />
                 <button onClick={() => postReply(q.id)}
-                  style={{ background: '#6C63FF', border: 'none', borderRadius: '8px', padding: '9px 18px', color: '#fff', fontWeight: '700', cursor: 'pointer' }}>
-                  Send
-                </button>
+                  style={{ background: '#6C63FF', border: 'none', borderRadius: '8px', padding: '9px 18px', color: '#fff', fontWeight: '700', cursor: 'pointer' }}>Send</button>
               </div>
             )}
           </div>
