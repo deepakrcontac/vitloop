@@ -126,24 +126,55 @@ export default function FacultyPage() {
 
       <div style={{ maxWidth: '700px', margin: '0 auto', padding: '20px' }}>
 
-        {/* FACULTY CARD */}
-        <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', padding: '24px', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '20px' }}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '18px', background: 'linear-gradient(135deg, #1a3cff, #7c3aed)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', flexShrink: 0, border: '2px solid rgba(255,255,255,0.15)' }}>
-              {faculty.imageUrl ? <img src={faculty.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={faculty.name} /> : '🎓'}
-            </div>
-            <div style={{ flex: 1 }}>
-              <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '900' }}>{faculty.name}</h2>
-              <p style={{ margin: '4px 0 2px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>🏫 {faculty.school}</p>
-              {faculty.subject && <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>📚 {faculty.subject}</p>}
-            </div>
-            <div style={{ textAlign: 'center', flexShrink: 0 }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: `4px solid ${scoreColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
-                <span style={{ fontSize: '15px', fontWeight: '900', color: scoreColor }}>{total === 0 ? '?' : score + '%'}</span>
-              </div>
-              <p style={{ margin: '6px 0 0', fontSize: '10px', color: scoreColor, fontWeight: '700', maxWidth: '70px', lineHeight: '1.3' }}>{scoreLabel}</p>
-            </div>
-          </div>
+       {/* FACULTY CARD */}
+<div style={{ marginBottom: '20px' }}>
+  {/* Full width image */}
+  <div style={{
+    width: '100%',
+    height: '220px',
+    borderRadius: '20px',
+    overflow: 'hidden',
+    marginBottom: '16px',
+    position: 'relative',
+    background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+    border: '1px solid rgba(255,255,255,0.1)',
+  }}>
+    {faculty.imageUrl
+      ? <img src={faculty.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={faculty.name} />
+      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '80px' }}>🎓</div>
+    }
+    {/* Gradient overlay */}
+    <div style={{
+      position: 'absolute',
+      bottom: 0, left: 0, right: 0,
+      padding: '40px 20px 16px',
+      background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
+    }}>
+      <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '900' }}>{faculty.name}</h2>
+      <p style={{ margin: '3px 0 0', fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>{faculty.school} {faculty.subject ? `· ${faculty.subject}` : ''}</p>
+    </div>
+    {/* Score badge */}
+    <div style={{
+      position: 'absolute',
+      top: '14px', right: '14px',
+      width: '52px', height: '52px',
+      borderRadius: '50%',
+      border: `3px solid ${scoreColor}`,
+      background: 'rgba(0,0,0,0.7)',
+      backdropFilter: 'blur(8px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: `0 0 16px ${scoreColor}44`,
+    }}>
+      <span style={{ fontSize: '13px', fontWeight: '900', color: scoreColor }}>{total === 0 ? '?' : score + '%'}</span>
+    </div>
+  </div>
+
+  <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '16px', marginBottom: '16px', textAlign: 'center' }}>
+    <span style={{ fontSize: '13px', fontWeight: '700', color: scoreColor }}>{scoreLabel}</span>
+    <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{total} total votes</p>
+  </div>
 
           {/* STATS */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
