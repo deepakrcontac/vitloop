@@ -176,11 +176,55 @@ export default function LoopRatePage() {
         {/* FACULTY LIST */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.4)' }}>Loading faculties...</div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px' }}>
-            <p style={{ fontSize: '48px' }}>🎓</p>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '16px' }}>{search ? 'No faculty found!' : 'No faculties yet. Add the first one!'}</p>
-          </div>
+       ) : filtered.length === 0 ? (
+  <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.1), rgba(0,212,255,0.06))', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '20px', padding: '28px', textAlign: 'center' }}>
+    <p style={{ fontSize: '44px', margin: '0 0 12px' }}>🔍</p>
+    <h3 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: '800', color: '#fff' }}>
+      "{search}" not found!
+    </h3>
+    <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'rgba(255,255,255,0.45)', lineHeight: '1.6' }}>
+      Be the first to add this faculty!<br/>
+      Add them and share with classmates to start getting votes.
+    </p>
+    <button onClick={() => setShowAdd(true)}
+      style={{
+        background: 'linear-gradient(135deg, #6C63FF, #00D4FF)',
+        border: 'none',
+        borderRadius: '12px',
+        padding: '13px 28px',
+        color: '#fff',
+        fontWeight: '800',
+        fontSize: '14px',
+        cursor: 'pointer',
+        boxShadow: '0 4px 20px rgba(108,99,255,0.4)',
+        marginBottom: '16px',
+        display: 'block',
+        width: '100%',
+      }}>
+      ➕ Add "{search}" as Faculty
+    </button>
+    <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px' }}>
+      <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.5)' }}>📢 After adding, share this link:</p>
+      <p style={{ margin: '0 0 10px', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>vitloop.vercel.app/looprate</p>
+      <button onClick={() => {
+        const msg = `⭐ Rate ${search} on VITLoop!\n\nHelp your classmates know the truth about this faculty 👇\n\nvitloop.vercel.app/looprate\n\n100% Anonymous 🔒`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+      }}
+        style={{
+          background: 'rgba(37,211,102,0.15)',
+          border: '1px solid rgba(37,211,102,0.3)',
+          borderRadius: '10px',
+          padding: '10px 20px',
+          color: '#25d366',
+          fontWeight: '700',
+          fontSize: '13px',
+          cursor: 'pointer',
+          width: '100%',
+        }}>
+        📲 Share on WhatsApp to get votes
+      </button>
+    </div>
+  </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {filtered.map(faculty => {
