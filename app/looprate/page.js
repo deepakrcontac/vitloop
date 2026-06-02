@@ -6,7 +6,7 @@ import Link from 'next/link';
 import BottomNav from '../components/BottomNav';
 import { uploadImage } from '../../lib/cloudinary';
 
-const ADMIN_PASSWORD = 'deeplooop'; // Change this to your secret password
+const ADMIN_PASSWORD = 'vitloop2024'; // Change this to your secret password
 
 export default function LoopRatePage() {
   const [faculties, setFaculties] = useState([]);
@@ -67,6 +67,25 @@ export default function LoopRatePage() {
     const file = e.target.files[0];
     if (file) { setImage(file); setPreview(URL.createObjectURL(file)); }
   };
+
+  // Paste image support (Ctrl+V anywhere on page)
+  const handlePaste = (e) => {
+    if (!showAdd) return; // only active when Add Faculty form is open
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) { setImage(file); setPreview(URL.createObjectURL(file)); }
+        break;
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [showAdd]);
 
   const addFaculty = async () => {
     if (!newFaculty.name || !newFaculty.school) return;
@@ -164,7 +183,10 @@ export default function LoopRatePage() {
           <div style={{ background: 'linear-gradient(135deg, rgba(200,241,53,0.08), rgba(255,92,53,0.08))', border: '1px solid rgba(200,241,53,0.2)', borderRadius: '16px', padding: '20px', marginBottom: '24px' }}>
             <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '800' }}>Add New Faculty</h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-              <div style={{ width: '72px', height: '72px', borderRadius: '16px', background: 'rgba(255,255,255,0.08)', border: '2px dashed rgba(255,255,255,0.2)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div
+                  onPaste={handlePaste}
+                  tabIndex={0}
+                  style={{ width: '72px', height: '72px', borderRadius: '16px', background: 'rgba(255,255,255,0.08)', border: '2px dashed rgba(255,255,255,0.2)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, outline: 'none' }}>
                 {preview ? <img src={preview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="preview" /> : <span style={{ fontSize: '28px' }}>🎓</span>}
               </div>
               <div>
@@ -172,7 +194,7 @@ export default function LoopRatePage() {
                   📸 Upload Photo
                   <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
                 </label>
-                <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>Optional — faculty photo</p>
+                <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>Optional · or press <kbd style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', padding: '1px 5px', fontSize: '10px' }}>Ctrl+V</kbd> to paste</p>
               </div>
             </div>
             <input value={newFaculty.name} onChange={e => setNewFaculty({ ...newFaculty, name: e.target.value })}
