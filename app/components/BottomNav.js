@@ -10,7 +10,7 @@ export default function BottomNav() {
     { href: '/chat', icon: '💬', label: 'Chats' },
     { href: '/looprate', icon: '⭐', label: 'Faculty' },
     { href: '/feed', icon: '🏪', label: 'Market' },
-    { href: '/profile', icon: '👤', label: 'Profile' },
+    { href: '/profile', icon: '🤝', label: 'Vibe Match' },
   ];
 
   return (
@@ -60,13 +60,19 @@ export default function BottomNav() {
                 justifyContent: 'center',
                 fontSize: '20px',
                 background: isActive
-                  ? 'linear-gradient(135deg, rgba(108,99,255,0.3), rgba(0,212,255,0.2))'
+                  ? tab.href === '/profile'
+                    ? 'linear-gradient(135deg, rgba(236,72,153,0.3), rgba(168,85,247,0.2))'
+                    : 'linear-gradient(135deg, rgba(108,99,255,0.3), rgba(0,212,255,0.2))'
                   : 'transparent',
                 border: isActive
-                  ? '1px solid rgba(108,99,255,0.4)'
+                  ? tab.href === '/profile'
+                    ? '1px solid rgba(236,72,153,0.4)'
+                    : '1px solid rgba(108,99,255,0.4)'
                   : '1px solid transparent',
                 boxShadow: isActive
-                  ? '0 0 12px rgba(108,99,255,0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
+                  ? tab.href === '/profile'
+                    ? '0 0 12px rgba(236,72,153,0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
+                    : '0 0 12px rgba(108,99,255,0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
                   : 'none',
                 transform: isActive ? 'translateY(-1px)' : 'none',
                 transition: 'all 0.2s ease',
@@ -76,7 +82,9 @@ export default function BottomNav() {
               <span style={{
                 fontSize: '9px',
                 fontWeight: '700',
-                color: isActive ? '#a78bfa' : 'rgba(255,255,255,0.3)',
+                color: isActive
+                  ? tab.href === '/profile' ? '#f472b6' : '#a78bfa'
+                  : 'rgba(255,255,255,0.3)',
                 letterSpacing: '0.5px',
                 textTransform: 'uppercase',
                 transition: 'color 0.2s',
