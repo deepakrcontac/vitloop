@@ -7,7 +7,7 @@ import BottomNav from '../components/BottomNav';
 
 const COLORS = ['#6C63FF','#00D4FF','#ff5c35','#c8f135','#f59e0b','#ec4899','#10b981'];
 const getColor = (uid) => COLORS[(uid?.charCodeAt(0) || 0) % COLORS.length];
-const ADMIN_PASSWORD = 'deeploop'; // Change this to your secret password
+const ADMIN_PASSWORD = 'deeplooop'; // Change this to your secret password
 
 export default function ChatPage() {
   const [questions, setQuestions] = useState([]);
