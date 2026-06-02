@@ -7,7 +7,7 @@ import Link from 'next/link';
 import BottomNav from '../components/BottomNav';
 
 const CATEGORIES = ['All', '🏠 Hostellers', '🚌 Day Scholars'];
-const ADMIN_PASSWORD = 'vitloop2024'; // Change this to your secret password
+const ADMIN_PASSWORD = 'deeploop'; // Change this to your secret password
 
 export default function FeedPage() {
   const [items, setItems] = useState([]);

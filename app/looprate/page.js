@@ -6,7 +6,7 @@ import Link from 'next/link';
 import BottomNav from '../components/BottomNav';
 import { uploadImage } from '../../lib/cloudinary';
 
-const ADMIN_PASSWORD = 'vitloop2024'; // Change this to your secret password
+const ADMIN_PASSWORD = 'deeploop'; // Change this to your secret password
 
 export default function LoopRatePage() {
   const [faculties, setFaculties] = useState([]);
