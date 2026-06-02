@@ -1,10 +1,12 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { db, auth } from '../../lib/firebase';
+import { useEffect, useState, useRef } from 'react';
+import { db } from '../../lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
 import BottomNav from '../components/BottomNav';
 import { uploadImage } from '../../lib/cloudinary';
+
+const ADMIN_PASSWORD = 'vitloop2024'; // Change this to your secret password
 
 export default function LoopRatePage() {
   const [faculties, setFaculties] = useState([]);
@@ -16,8 +18,15 @@ export default function LoopRatePage() {
   const [preview, setPreview] = useState(null);
   const [adding, setAdding] = useState(false);
   const [copied, setCopied] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const tapCount = useRef(0);
+  const tapTimer = useRef(null);
 
-  useEffect(() => { fetchFaculties(); }, []);
+  // Check localStorage for admin status on mount
+  useEffect(() => {
+    if (localStorage.getItem('isAdmin') === 'true') setIsAdmin(true);
+    fetchFaculties();
+  }, []);
 
   const fetchFaculties = async () => {
     try {
@@ -26,6 +35,32 @@ export default function LoopRatePage() {
       setFaculties(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) {}
     setLoading(false);
+  };
+
+  // Secret 5-tap handler
+  const handleSecretTap = () => {
+    tapCount.current += 1;
+    clearTimeout(tapTimer.current);
+    tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 2000);
+
+    if (tapCount.current >= 5) {
+      tapCount.current = 0;
+      if (isAdmin) {
+        if (confirm('Exit admin mode?')) {
+          localStorage.removeItem('isAdmin');
+          setIsAdmin(false);
+        }
+        return;
+      }
+      const pwd = prompt('🔐 Enter admin password:');
+      if (pwd === ADMIN_PASSWORD) {
+        localStorage.setItem('isAdmin', 'true');
+        setIsAdmin(true);
+        alert('✅ Admin mode enabled');
+      } else if (pwd !== null) {
+        alert('❌ Wrong password');
+      }
+    }
   };
 
   const handleImageChange = (e) => {
@@ -43,7 +78,7 @@ export default function LoopRatePage() {
         ...newFaculty, imageUrl,
         greenFlags: 0, redFlags: 0, reviewCount: 0,
         createdAt: serverTimestamp(),
-        addedBy: auth.currentUser?.email || 'anonymous',
+        addedBy: 'anonymous', // auth removed; no email tracking
       });
       setNewFaculty({ name: '', school: '', subject: '' });
       setImage(null); setPreview(null); setShowAdd(false);
@@ -54,6 +89,7 @@ export default function LoopRatePage() {
 
   const deleteFaculty = async (e, id) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!confirm('Delete this faculty?')) return;
     await deleteDoc(doc(db, 'faculties', id));
     setFaculties(faculties.filter(f => f.id !== id));
@@ -61,6 +97,7 @@ export default function LoopRatePage() {
 
   const shareWhatsApp = (e, faculty) => {
     e.preventDefault();
+    e.stopPropagation();
     const url = `https://vitloop.vercel.app/looprate/${faculty.id}`;
     const msg = `⭐ Rate ${faculty.name} on VITLoop Faculty Review!\n${faculty.school}\n\nVote & see what others think 👇\n${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
@@ -68,14 +105,12 @@ export default function LoopRatePage() {
 
   const copyLink = (e, faculty) => {
     e.preventDefault();
+    e.stopPropagation();
     const url = `https://vitloop.vercel.app/looprate/${faculty.id}`;
     navigator.clipboard.writeText(url);
     setCopied(faculty.id);
     setTimeout(() => setCopied(null), 2000);
   };
-
-  const isAdmin = auth.currentUser?.email === 'deepak.2024a@vitstudent.ac.in' ||
-    auth.currentUser?.email === 'deepak.rcontact@gmail.com';
 
   const filtered = faculties.filter(f =>
     f.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -100,8 +135,21 @@ export default function LoopRatePage() {
 
       <nav style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'sticky', top: 0, zIndex: 100, background: 'rgba(13,13,13,0.95)', backdropFilter: 'blur(20px)' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '900' }}>Faculty <span style={{ color: '#c8f135' }}>Review</span> ⭐</h1>
-          <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Rate your faculty · Help juniors choose wisely</p>
+          {/* 5-tap secret trigger on the heading */}
+          <h1
+            onClick={handleSecretTap}
+            style={{ margin: 0, fontSize: '20px', fontWeight: '900', userSelect: 'none', cursor: 'default' }}
+          >
+            Faculty <span style={{ color: '#c8f135' }}>Review</span> ⭐
+          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Rate your faculty · Help juniors choose wisely</p>
+            {isAdmin && (
+              <span style={{ background: 'rgba(255,92,53,0.2)', color: '#ff5c35', border: '1px solid rgba(255,92,53,0.4)', borderRadius: '6px', fontSize: '10px', fontWeight: '700', padding: '2px 8px' }}>
+                ADMIN
+              </span>
+            )}
+          </div>
         </div>
         <button onClick={() => setShowAdd(!showAdd)}
           style={{ background: 'linear-gradient(135deg, #c8f135, #a8d020)', color: '#0d0d0d', border: 'none', borderRadius: '10px', padding: '9px 16px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
@@ -176,62 +224,38 @@ export default function LoopRatePage() {
         {/* FACULTY LIST */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.4)' }}>Loading faculties...</div>
-       ) : filtered.length === 0 ? (
-  <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.1), rgba(0,212,255,0.06))', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '20px', padding: '28px', textAlign: 'center' }}>
-    <p style={{ fontSize: '44px', margin: '0 0 12px' }}>🔍</p>
-    <h3 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: '800', color: '#fff' }}>
-      "{search}" not found!
-    </h3>
-    <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'rgba(255,255,255,0.45)', lineHeight: '1.6' }}>
-      Be the first to add this faculty!<br/>
-      Add them and share with classmates to start getting votes.
-    </p>
-    <button onClick={() => setShowAdd(true)}
-      style={{
-        background: 'linear-gradient(135deg, #6C63FF, #00D4FF)',
-        border: 'none',
-        borderRadius: '12px',
-        padding: '13px 28px',
-        color: '#fff',
-        fontWeight: '800',
-        fontSize: '14px',
-        cursor: 'pointer',
-        boxShadow: '0 4px 20px rgba(108,99,255,0.4)',
-        marginBottom: '16px',
-        display: 'block',
-        width: '100%',
-      }}>
-      ➕ Add "{search}" as Faculty
-    </button>
-    <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px' }}>
-      <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.5)' }}>📢 After adding, share this link:</p>
-      <p style={{ margin: '0 0 10px', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>vitloop.vercel.app/looprate</p>
-      <button onClick={() => {
-        const msg = `⭐ Rate ${search} on VITLoop!\n\nHelp your classmates know the truth about this faculty 👇\n\nvitloop.vercel.app/looprate\n\n100% Anonymous 🔒`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-      }}
-        style={{
-          background: 'rgba(37,211,102,0.15)',
-          border: '1px solid rgba(37,211,102,0.3)',
-          borderRadius: '10px',
-          padding: '10px 20px',
-          color: '#25d366',
-          fontWeight: '700',
-          fontSize: '13px',
-          cursor: 'pointer',
-          width: '100%',
-        }}>
-        📲 Share on WhatsApp to get votes
-      </button>
-    </div>
-  </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.1), rgba(0,212,255,0.06))', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '20px', padding: '28px', textAlign: 'center' }}>
+            <p style={{ fontSize: '44px', margin: '0 0 12px' }}>🔍</p>
+            <h3 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: '800', color: '#fff' }}>
+              "{search}" not found!
+            </h3>
+            <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'rgba(255,255,255,0.45)', lineHeight: '1.6' }}>
+              Be the first to add this faculty!<br/>
+              Add them and share with classmates to start getting votes.
+            </p>
+            <button onClick={() => setShowAdd(true)}
+              style={{ background: 'linear-gradient(135deg, #6C63FF, #00D4FF)', border: 'none', borderRadius: '12px', padding: '13px 28px', color: '#fff', fontWeight: '800', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(108,99,255,0.4)', marginBottom: '16px', display: 'block', width: '100%' }}>
+              ➕ Add "{search}" as Faculty
+            </button>
+            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px' }}>
+              <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.5)' }}>📢 After adding, share this link:</p>
+              <p style={{ margin: '0 0 10px', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>vitloop.vercel.app/looprate</p>
+              <button onClick={() => {
+                const msg = `⭐ Rate ${search} on VITLoop!\n\nHelp your classmates know the truth about this faculty 👇\n\nvitloop.vercel.app/looprate\n\n100% Anonymous 🔒`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+              }}
+                style={{ background: 'rgba(37,211,102,0.15)', border: '1px solid rgba(37,211,102,0.3)', borderRadius: '10px', padding: '10px 20px', color: '#25d366', fontWeight: '700', fontSize: '13px', cursor: 'pointer', width: '100%' }}>
+                📲 Share on WhatsApp to get votes
+              </button>
+            </div>
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {filtered.map(faculty => {
               const score = getScore(faculty);
               const scoreColor = getScoreColor(score);
               const total = (faculty.greenFlags || 0) + (faculty.redFlags || 0);
-              const canDelete = isAdmin || auth.currentUser?.email === faculty.addedBy;
               return (
                 <Link key={faculty.id} href={"/looprate/" + faculty.id} style={{ textDecoration: 'none' }}>
                   <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '18px', cursor: 'pointer', transition: 'border-color 0.2s, transform 0.2s' }}
@@ -253,7 +277,8 @@ export default function LoopRatePage() {
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: `3px solid ${scoreColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
                           <span style={{ fontSize: '13px', fontWeight: '900', color: scoreColor }}>{total === 0 ? '?' : score + '%'}</span>
                         </div>
-                        {canDelete && (
+                        {/* Admin-only delete button */}
+                        {isAdmin && (
                           <button onClick={(e) => deleteFaculty(e, faculty.id)}
                             style={{ background: 'rgba(255,92,53,0.1)', color: '#ff5c35', border: '1px solid rgba(255,92,53,0.2)', borderRadius: '8px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }}>
                             🗑️ Delete
@@ -272,7 +297,6 @@ export default function LoopRatePage() {
                         <span style={{ fontSize: '13px', fontWeight: '700', color: '#f87171' }}>{faculty.redFlags || 0} Red</span>
                       </div>
 
-                      {/* SHARE BUTTONS */}
                       <button onClick={(e) => shareWhatsApp(e, faculty)}
                         style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: '8px', padding: '6px 12px', color: '#25d366', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
                         <span>📲</span> Share

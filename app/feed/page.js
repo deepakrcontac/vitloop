@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '../../lib/firebase';
 import { collection, getDocs, deleteDoc, doc, orderBy, query } from 'firebase/firestore';
@@ -7,14 +7,22 @@ import Link from 'next/link';
 import BottomNav from '../components/BottomNav';
 
 const CATEGORIES = ['All', '🏠 Hostellers', '🚌 Day Scholars'];
+const ADMIN_PASSWORD = 'vitloop2024'; // Change this to your secret password
 
 export default function FeedPage() {
   const [items, setItems] = useState([]);
   const [category, setCategory] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const tapCount = useRef(0);
+  const tapTimer = useRef(null);
   const router = useRouter();
 
-  useEffect(() => { fetchListings(); }, []);
+  // Check localStorage for admin status on mount
+  useEffect(() => {
+    if (localStorage.getItem('isAdmin') === 'true') setIsAdmin(true);
+    fetchListings();
+  }, []);
 
   const fetchListings = async () => {
     try {
@@ -25,6 +33,41 @@ export default function FeedPage() {
     setLoading(false);
   };
 
+  // Secret 5-tap handler — attach to any element (we use the page title)
+  const handleSecretTap = () => {
+    tapCount.current += 1;
+    clearTimeout(tapTimer.current);
+    tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 2000);
+
+    if (tapCount.current >= 5) {
+      tapCount.current = 0;
+      if (isAdmin) {
+        // Already admin — offer to exit
+        if (confirm('Exit admin mode?')) {
+          localStorage.removeItem('isAdmin');
+          setIsAdmin(false);
+        }
+        return;
+      }
+      const pwd = prompt('🔐 Enter admin password:');
+      if (pwd === ADMIN_PASSWORD) {
+        localStorage.setItem('isAdmin', 'true');
+        setIsAdmin(true);
+        alert('✅ Admin mode enabled');
+      } else if (pwd !== null) {
+        alert('❌ Wrong password');
+      }
+    }
+  };
+
+  const deleteListing = async (e, id) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm('Delete this listing?')) return;
+    await deleteDoc(doc(db, 'listings', id));
+    setItems(items.filter(i => i.id !== id));
+  };
+
   const filtered = category === 'All' ? items : items.filter(i => i.studentType === category.replace(/^.+? /, ''));
 
   return (
@@ -33,7 +76,18 @@ export default function FeedPage() {
       <nav style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, zIndex: 100, background: 'rgba(7,7,15,0.97)', backdropFilter: 'blur(20px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '20px', cursor: 'pointer', padding: '0 4px' }}>←</button>
-          <span style={{ fontSize: '18px', fontWeight: '900' }}>🏪 Marketplace</span>
+          {/* 5-tap secret trigger on the title */}
+          <span
+            onClick={handleSecretTap}
+            style={{ fontSize: '18px', fontWeight: '900', userSelect: 'none', cursor: 'default' }}
+          >
+            🏪 Marketplace
+          </span>
+          {isAdmin && (
+            <span style={{ background: 'rgba(255,92,53,0.2)', color: '#ff5c35', border: '1px solid rgba(255,92,53,0.4)', borderRadius: '6px', fontSize: '10px', fontWeight: '700', padding: '2px 8px' }}>
+              ADMIN
+            </span>
+          )}
         </div>
         <Link href="/sell" style={{
           background: 'linear-gradient(135deg, #c8f135, #a8d020)', color: '#0d0d0d',
@@ -87,6 +141,15 @@ export default function FeedPage() {
                   {item.imageUrl ? <img src={item.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={item.title} /> : '📦'}
                   <span style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '10px', padding: '3px 8px', borderRadius: '100px', background: item.type === 'Rent' ? 'rgba(90,158,26,0.9)' : 'rgba(255,92,53,0.9)', color: '#fff', fontWeight: '700' }}>{item.type}</span>
                   <span style={{ position: 'absolute', top: '8px', left: '8px', fontSize: '10px', padding: '3px 8px', borderRadius: '100px', background: 'rgba(0,0,0,0.7)', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{item.studentType}</span>
+                  {/* Admin delete button overlaid on image */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => deleteListing(e, item.id)}
+                      style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(255,92,53,0.85)', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+                    >
+                      🗑️
+                    </button>
+                  )}
                 </div>
                 <div style={{ padding: '12px' }}>
                   <p style={{ fontWeight: '700', fontSize: '13px', color: '#fff', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>

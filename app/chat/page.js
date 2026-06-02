@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp, updateDoc, arrayUnion, onSnapshot } from 'firebase/firestore';
@@ -7,6 +7,7 @@ import BottomNav from '../components/BottomNav';
 
 const COLORS = ['#6C63FF','#00D4FF','#ff5c35','#c8f135','#f59e0b','#ec4899','#10b981'];
 const getColor = (uid) => COLORS[(uid?.charCodeAt(0) || 0) % COLORS.length];
+const ADMIN_PASSWORD = 'vitloop2024'; // Change this to your secret password
 
 export default function ChatPage() {
   const [questions, setQuestions] = useState([]);
@@ -14,7 +15,15 @@ export default function ChatPage() {
   const [posting, setPosting] = useState(false);
   const [openReply, setOpenReply] = useState(null);
   const [replyText, setReplyText] = useState({});
+  const [isAdmin, setIsAdmin] = useState(false);
+  const tapCount = useRef(0);
+  const tapTimer = useRef(null);
   const router = useRouter();
+
+  // Check localStorage for admin status on mount
+  useEffect(() => {
+    if (localStorage.getItem('isAdmin') === 'true') setIsAdmin(true);
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, 'needboard'), orderBy('createdAt', 'desc'));
@@ -23,6 +32,32 @@ export default function ChatPage() {
     });
     return () => unsub();
   }, []);
+
+  // Secret 5-tap handler
+  const handleSecretTap = () => {
+    tapCount.current += 1;
+    clearTimeout(tapTimer.current);
+    tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 2000);
+
+    if (tapCount.current >= 5) {
+      tapCount.current = 0;
+      if (isAdmin) {
+        if (confirm('Exit admin mode?')) {
+          localStorage.removeItem('isAdmin');
+          setIsAdmin(false);
+        }
+        return;
+      }
+      const pwd = prompt('🔐 Enter admin password:');
+      if (pwd === ADMIN_PASSWORD) {
+        localStorage.setItem('isAdmin', 'true');
+        setIsAdmin(true);
+        alert('✅ Admin mode enabled');
+      } else if (pwd !== null) {
+        alert('❌ Wrong password');
+      }
+    }
+  };
 
   const postQuestion = async () => {
     if (!newQ.trim()) return;
@@ -57,12 +92,31 @@ export default function ChatPage() {
     setOpenReply(null);
   };
 
+  const deleteQuestion = async (e, id) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm('Delete this question?')) return;
+    await deleteDoc(doc(db, 'needboard', id));
+    // onSnapshot will auto-update the list
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #07070f 0%, #0d0d1a 50%, #07070f 100%)', fontFamily: "'Segoe UI', sans-serif", color: '#fff', paddingBottom: '80px' }}>
 
       <nav style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, zIndex: 100, background: 'rgba(7,7,15,0.95)', backdropFilter: 'blur(20px)' }}>
         <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '22px', cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>←</button>
-        <span style={{ color: '#a78bfa', fontSize: '14px', fontWeight: '600' }}>💬 Help Board</span>
+        {/* 5-tap secret trigger on the Help Board label */}
+        <span
+          onClick={handleSecretTap}
+          style={{ color: '#a78bfa', fontSize: '14px', fontWeight: '600', userSelect: 'none', cursor: 'default' }}
+        >
+          💬 Help Board
+        </span>
+        {isAdmin && (
+          <span style={{ background: 'rgba(255,92,53,0.2)', color: '#ff5c35', border: '1px solid rgba(255,92,53,0.4)', borderRadius: '6px', fontSize: '10px', fontWeight: '700', padding: '2px 8px' }}>
+            ADMIN
+          </span>
+        )}
       </nav>
 
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '28px 20px' }}>
@@ -114,11 +168,20 @@ export default function ChatPage() {
               </div>
             ))}
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
               <button onClick={() => setOpenReply(openReply === q.id ? null : q.id)}
                 style={{ background: 'transparent', border: '1px solid rgba(108,99,255,0.3)', color: '#a78bfa', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
                 💬 Reply ({(q.replies || []).length})
               </button>
+              {/* Admin delete button */}
+              {isAdmin && (
+                <button
+                  onClick={(e) => deleteQuestion(e, q.id)}
+                  style={{ background: 'rgba(255,92,53,0.1)', color: '#ff5c35', border: '1px solid rgba(255,92,53,0.25)', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}
+                >
+                  🗑️ Delete
+                </button>
+              )}
             </div>
 
             {openReply === q.id && (
