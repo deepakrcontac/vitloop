@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { db, auth } from '../../lib/firebase';
+import { db } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { uploadImage } from '../../lib/cloudinary';
 import { useRouter } from 'next/navigation';
@@ -18,10 +18,7 @@ export default function SellPage() {
   const router = useRouter();
 
   const handleSubmit = async () => {
-    if (!title || !price || !hostel) {
-      setError('Please fill title, price and location!');
-      return;
-    }
+    if (!title || !price || !hostel) { setError('Please fill title, price and location!'); return; }
     setLoading(true);
     try {
       let imageUrl = '';
@@ -30,8 +27,8 @@ export default function SellPage() {
         title, price: Number(price), studentType, type,
         hostel, description, imageUrl,
         createdAt: serverTimestamp(),
-        userId: auth.currentUser?.uid || 'anonymous',
-        userEmail: auth.currentUser?.email || 'anonymous',
+        userId: 'anonymous',
+        userEmail: 'anonymous',
       });
       router.push('/feed');
     } catch (err) {
@@ -57,7 +54,6 @@ export default function SellPage() {
         {error && <p style={{ color: '#ff5c35', fontSize: '13px', marginBottom: '16px', background: 'rgba(255,92,53,0.1)', padding: '12px 16px', borderRadius: '10px' }}>{error}</p>}
 
         <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))', borderRadius: '20px', padding: '28px', border: '1px solid rgba(255,255,255,0.1)' }}>
-
           <label style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Item Title *</label>
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Casio fx-991 Calculator"
             style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.12)', marginBottom: '18px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', background: 'rgba(255,255,255,0.07)', color: '#fff', boxSizing: 'border-box' }} />
@@ -98,7 +94,6 @@ export default function SellPage() {
           <input type="file" accept="image/*" onChange={e => setImage(e.target.files[0])}
             style={{ width: '100%', marginBottom: '24px', fontSize: '13px', color: 'rgba(255,255,255,0.5)' }} />
 
-          {/* Anonymous notice */}
           <div style={{ background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '18px' }}>🔒</span>
             <p style={{ margin: 0, fontSize: '12px', color: '#a78bfa' }}>Your identity is completely anonymous. Buyers will contact you through VITLoop chat only.</p>
