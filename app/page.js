@@ -1,6 +1,47 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import BottomNav from './components/BottomNav';
+
+function NicknameButton() {
+  const [nickname, setNickname] = useState('');
+  const [show, setShow] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('vitloop_nickname');
+    if (saved) setNickname(saved);
+  }, []);
+
+  const save = () => {
+    if (!draft.trim()) return;
+    localStorage.setItem('vitloop_nickname', draft.trim());
+    setNickname(draft.trim());
+    setShow(false);
+    setDraft('');
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button onClick={() => { setShow(!show); setDraft(nickname || ''); }}
+        style={{ background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '20px', padding: '5px 12px', fontSize: '11px', fontWeight: '700', color: '#a78bfa', cursor: 'pointer' }}>
+        🎭 {nickname || 'Set Nickname'}
+      </button>
+      {show && (
+        <div style={{ position: 'absolute', right: 0, top: '36px', background: '#0d0d1a', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '12px', padding: '12px', width: '220px', zIndex: 200, boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}>
+          <p style={{ margin: '0 0 8px', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Your anonymous nickname</p>
+          <input value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()}
+            placeholder="Jupiter, Naruto..."
+            style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '8px', padding: '8px 10px', color: '#fff', fontSize: '13px', outline: 'none', boxSizing: 'border-box', marginBottom: '8px' }} autoFocus />
+          <button onClick={save}
+            style={{ width: '100%', background: 'linear-gradient(135deg, #6C63FF, #00D4FF)', border: 'none', borderRadius: '8px', padding: '8px', color: '#fff', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+            Save Nickname ✓
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Home() {
   const features = [
@@ -89,15 +130,7 @@ export default function Home() {
             VIT<span style={{ color: '#ff5c35' }}>Loop</span>
           </span>
         </div>
-        <div style={{
-          background: 'rgba(108,99,255,0.15)',
-          border: '1px solid rgba(108,99,255,0.3)',
-          borderRadius: '20px',
-          padding: '5px 12px',
-          fontSize: '11px',
-          fontWeight: '700',
-          color: '#a78bfa',
-        }}>🔒 Anonymous Mode</div>
+        <NicknameButton />
       </nav>
 
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '20px 16px' }}>
@@ -111,44 +144,37 @@ export default function Home() {
           position: 'relative',
           overflow: 'hidden',
         }}>
-          <div style={{
-            position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)',
-            width: '200px', height: '100px', background: 'rgba(108,99,255,0.2)',
-            borderRadius: '50%', filter: 'blur(30px)', pointerEvents: 'none',
-          }}/>
+          <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', width: '200px', height: '100px', background: 'rgba(108,99,255,0.2)', borderRadius: '50%', filter: 'blur(30px)', pointerEvents: 'none' }}/>
           <div style={{ fontSize: '28px', marginBottom: '8px' }}>🔐</div>
-          <h1 style={{
-            fontSize: '20px', fontWeight: '900', margin: '0 0 6px',
-            background: 'linear-gradient(135deg, #a78bfa, #00D4FF)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>100% Anonymous</h1>
+          <h1 style={{ fontSize: '20px', fontWeight: '900', margin: '0 0 6px', background: 'linear-gradient(135deg, #a78bfa, #00D4FF)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>100% Anonymous</h1>
           <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', margin: '0 0 14px', lineHeight: '1.5' }}>
             No one knows who you are. Your identity is never revealed — not to us, not to anyone.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
             {['🚫 No Real Name', '📵 No Phone', '👁️ No Tracking'].map(b => (
-              <span key={b} style={{
-                background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '100px', padding: '4px 12px', fontSize: '11px', fontWeight: '600', color: 'rgba(255,255,255,0.7)',
-              }}>{b}</span>
+              <span key={b} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '100px', padding: '4px 12px', fontSize: '11px', fontWeight: '600', color: 'rgba(255,255,255,0.7)' }}>{b}</span>
             ))}
           </div>
         </div>
 
-        <p style={{
-          fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.35)',
-          letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '14px',
-        }}>Explore VITLoop</p>
+        <p style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.35)', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '14px' }}>Explore VITLoop</p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {features.map((f, i) => (
             <Link key={i} href={f.href} style={{ textDecoration: 'none' }}>
               <div style={{
                 background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-                border: '1px solid rgba(255,255,255,0.08)', borderRadius: '18px', padding: '18px',
-                display: 'flex', gap: '16px', alignItems: 'center', cursor: 'pointer',
-                transition: 'all 0.2s ease', boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
-                position: 'relative', overflow: 'hidden',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '16px',
+                alignItems: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+                position: 'relative',
+                overflow: 'hidden',
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.transform = 'translateY(-2px)';
@@ -163,25 +189,14 @@ export default function Home() {
               onMouseDown={e => e.currentTarget.style.transform = 'translateY(1px) scale(0.99)'}
               onMouseUp={e => e.currentTarget.style.transform = 'translateY(-2px)'}
               >
-                <div style={{
-                  position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px',
-                  background: `linear-gradient(180deg, ${f.color1}, ${f.color2})`,
-                  borderRadius: '18px 0 0 18px',
-                }}/>
-                <div style={{
-                  width: '52px', height: '52px', borderRadius: '14px',
-                  background: `linear-gradient(135deg, ${f.color1}22, ${f.color2}11)`,
-                  border: `1px solid ${f.color1}33`, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', fontSize: '24px', flexShrink: 0,
-                  boxShadow: `0 4px 16px ${f.color1}22`,
-                }}>{f.emoji}</div>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: `linear-gradient(180deg, ${f.color1}, ${f.color2})`, borderRadius: '18px 0 0 18px' }}/>
+                <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: `linear-gradient(135deg, ${f.color1}22, ${f.color2}11)`, border: `1px solid ${f.color1}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0, boxShadow: `0 4px 16px ${f.color1}22` }}>
+                  {f.emoji}
+                </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                     <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#fff' }}>{f.title}</h3>
-                    <span style={{
-                      background: f.tagBg, color: f.tagColor, fontSize: '10px',
-                      fontWeight: '700', padding: '2px 8px', borderRadius: '100px',
-                    }}>{f.tag}</span>
+                    <span style={{ background: f.tagBg, color: f.tagColor, fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '100px' }}>{f.tag}</span>
                   </div>
                   <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.45)', lineHeight: '1.5' }}>{f.desc}</p>
                 </div>
@@ -191,11 +206,7 @@ export default function Home() {
           ))}
         </div>
 
-        <div style={{
-          marginTop: '24px', textAlign: 'center', padding: '16px',
-          background: 'rgba(255,255,255,0.03)', borderRadius: '14px',
-          border: '1px solid rgba(255,255,255,0.06)',
-        }}>
+        <div style={{ marginTop: '24px', textAlign: 'center', padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)' }}>
           <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.3)', lineHeight: '1.6' }}>
             🎓 Made by a VITian, for VITians<br/>
             <span style={{ color: 'rgba(255,255,255,0.15)' }}>Your campus. Your rules. Your privacy.</span>
