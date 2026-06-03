@@ -44,6 +44,34 @@ function NicknameButton() {
 }
 
 export default function Home() {
+  const [showNicknamePopup, setShowNicknamePopup] = useState(false);
+  const [nickDraft, setNickDraft] = useState('');
+  const [nickname, setNickname] = useState('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('vitloop_nickname');
+    if (saved) {
+      setNickname(saved);
+    } else {
+      // Show popup after 1 second if no nickname set
+      setTimeout(() => setShowNicknamePopup(true), 800);
+    }
+  }, []);
+
+  const saveNickname = (skip = false) => {
+    if (!skip && !nickDraft.trim()) return;
+    if (!skip) {
+      localStorage.setItem('vitloop_nickname', nickDraft.trim());
+      setNickname(nickDraft.trim());
+    } else {
+      localStorage.setItem('vitloop_nickname', 'Anonymous Vitian');
+      setNickname('Anonymous Vitian');
+    }
+    setShowNicknamePopup(false);
+  };
+
+  const funNicknames = ['Jupiter', 'Naruto', 'Shadow', 'Phoenix', 'Cosmos', 'Ninja', 'Storm', 'Echo'];
+
   const features = [
     {
       href: '/chat',
@@ -99,6 +127,116 @@ export default function Home() {
       color: '#fff',
       paddingBottom: '90px',
     }}>
+
+      {/* ===== NICKNAME POPUP ===== */}
+      {showNicknamePopup && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '20px',
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #0d0d1a, #13132b)',
+            border: '1px solid rgba(108,99,255,0.4)',
+            borderRadius: '24px',
+            padding: '32px 24px',
+            maxWidth: '360px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 20px 60px rgba(108,99,255,0.2)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Glow */}
+            <div style={{ position: 'absolute', top: '-40px', left: '50%', transform: 'translateX(-50%)', width: '200px', height: '150px', background: 'rgba(108,99,255,0.15)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }}/>
+
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎭</div>
+            <h2 style={{ fontSize: '20px', fontWeight: '900', margin: '0 0 8px', color: '#fff' }}>
+              Pick Your Identity
+            </h2>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 6px', lineHeight: '1.5' }}>
+              Choose a fun nickname — this is what others will see.
+            </p>
+            <p style={{ fontSize: '12px', fontWeight: '700', color: '#a78bfa', margin: '0 0 20px' }}>
+              🔒 Don't use your real name — stay anonymous!
+            </p>
+
+            {/* Quick suggestions */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', marginBottom: '16px' }}>
+              {funNicknames.map(n => (
+                <button key={n} onClick={() => setNickDraft(n)}
+                  style={{
+                    background: nickDraft === n ? 'rgba(108,99,255,0.3)' : 'rgba(255,255,255,0.06)',
+                    border: `1px solid ${nickDraft === n ? 'rgba(108,99,255,0.6)' : 'rgba(255,255,255,0.1)'}`,
+                    borderRadius: '100px',
+                    padding: '5px 12px',
+                    color: nickDraft === n ? '#a78bfa' : 'rgba(255,255,255,0.5)',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}>
+                  {n}
+                </button>
+              ))}
+            </div>
+
+            {/* Input */}
+            <input
+              value={nickDraft}
+              onChange={e => setNickDraft(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && saveNickname()}
+              placeholder="Or type your own nickname..."
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(108,99,255,0.3)',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                color: '#fff',
+                fontSize: '15px',
+                outline: 'none',
+                boxSizing: 'border-box',
+                marginBottom: '12px',
+                textAlign: 'center',
+                fontWeight: '600',
+              }}
+              autoFocus
+            />
+
+            {/* Save button */}
+            <button onClick={() => saveNickname()}
+              style={{
+                width: '100%',
+                background: nickDraft.trim()
+                  ? 'linear-gradient(135deg, #6C63FF, #00D4FF)'
+                  : 'rgba(255,255,255,0.08)',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '13px',
+                color: nickDraft.trim() ? '#fff' : 'rgba(255,255,255,0.3)',
+                fontWeight: '800',
+                fontSize: '15px',
+                cursor: nickDraft.trim() ? 'pointer' : 'not-allowed',
+                marginBottom: '10px',
+                boxShadow: nickDraft.trim() ? '0 4px 20px rgba(108,99,255,0.4)' : 'none',
+                transition: 'all 0.2s',
+              }}>
+              🚀 Enter VITLoop as "{nickDraft || '...'}"
+            </button>
+
+            {/* Skip */}
+            <button onClick={() => saveNickname(true)}
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>
+              Skip for now (enter as Anonymous Vitian)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* NAV */}
       <nav style={{
         padding: '14px 20px',
         display: 'flex',
@@ -134,6 +272,8 @@ export default function Home() {
       </nav>
 
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '20px 16px' }}>
+
+        {/* Trust banner */}
         <div style={{
           background: 'linear-gradient(135deg, rgba(108,99,255,0.15), rgba(0,212,255,0.08))',
           border: '1px solid rgba(108,99,255,0.3)',
