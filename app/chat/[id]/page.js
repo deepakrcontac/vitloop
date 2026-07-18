@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { db, auth } from '../../../lib/firebase';
+import { db } from '../../../lib/firebase';
+import { useUid } from '../../../lib/auth';
+import { pushNotification } from '../../../lib/notifications';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -10,11 +12,12 @@ const getColor = (uid) => COLORS[(uid?.charCodeAt(0) || 0) % COLORS.length];
 export default function ItemChatPage() {
   const { id } = useParams();
   const router = useRouter();
+  const uid = useUid(); // 🔧 was `auth.currentUser` before — that was always null since
+                          // nothing ever called signInAnonymously(). This fixes "Send" silently doing nothing.
   const [messages, setMessages] = useState([]);
   const [newMsg, setNewMsg] = useState('');
   const [item, setItem] = useState(null);
   const bottomRef = useRef(null);
-  const user = auth.currentUser;
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -31,20 +34,47 @@ export default function ItemChatPage() {
   }, [id]);
 
   const sendMessage = async () => {
-    if (!newMsg.trim() || !user) return;
+    if (!newMsg.trim() || !uid) return;
     await addDoc(collection(db, `chats/${id}/messages`), {
       text: newMsg,
-      senderId: user.uid,
+      senderId: uid,
       senderName: 'Anonymous Vitian',
       createdAt: serverTimestamp(),
     });
+
+    // Notify the right person: if the seller is replying, notify buyers in
+    // the thread; if a buyer is messaging, notify the seller.
+    if (item?.sellerId) {
+      if (uid === item.sellerId) {
+        const buyerIds = new Set(messages.map(m => m.senderId).filter(bId => bId && bId !== item.sellerId));
+        buyerIds.forEach(buyerId => {
+          pushNotification({
+            userId: buyerId,
+            type: 'market_chat',
+            title: `Reply about "${item.title}"`,
+            body: newMsg,
+            link: `/chat/${id}`,
+            fromUid: uid,
+          });
+        });
+      } else {
+        pushNotification({
+          userId: item.sellerId,
+          type: 'market_chat',
+          title: `New message about "${item.title}"`,
+          body: newMsg,
+          link: `/chat/${id}`,
+          fromUid: uid,
+        });
+      }
+    }
+
     setNewMsg('');
   };
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #07070f 0%, #0d0d1a 50%, #07070f 100%)', fontFamily: "'Segoe UI', sans-serif", color: '#fff', display: 'flex', flexDirection: 'column' }}>
 
-      {/* NAV */}
       <nav style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '14px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(7,7,15,0.95)', backdropFilter: 'blur(20px)', position: 'sticky', top: 0, zIndex: 100 }}>
         <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '20px', cursor: 'pointer' }}>←</button>
         <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg,#6C63FF,#00D4FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>💬</div>
@@ -54,7 +84,6 @@ export default function ItemChatPage() {
         </div>
       </nav>
 
-      {/* ITEM INFO */}
       {item && (
         <div style={{ margin: '16px 20px', background: 'linear-gradient(135deg, rgba(200,241,53,0.08), rgba(255,92,53,0.08))', border: '1px solid rgba(200,241,53,0.15)', borderRadius: '14px', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -69,7 +98,6 @@ export default function ItemChatPage() {
         </div>
       )}
 
-      {/* MESSAGES */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
@@ -79,7 +107,7 @@ export default function ItemChatPage() {
           </div>
         )}
         {messages.map(msg => {
-          const isMe = msg.senderId === user?.uid;
+          const isMe = msg.senderId === uid;
           return (
             <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: '8px' }}>
               {!isMe && (
@@ -97,7 +125,6 @@ export default function ItemChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* INPUT */}
       <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(7,7,15,0.95)', display: 'flex', gap: '10px' }}>
         <input value={newMsg} onChange={e => setNewMsg(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()}
           placeholder="Message anonymously..."

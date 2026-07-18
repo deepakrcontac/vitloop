@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AuthInit from "./components/AuthInit";
 
 export const metadata: Metadata = {
   title: "VITLoop - Campus Marketplace",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AuthInit />
+        {children}
+      </body>
     </html>
   );
 }

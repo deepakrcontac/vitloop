@@ -4,12 +4,16 @@ import { useRouter } from 'next/navigation';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, deleteDoc, doc, orderBy, query, serverTimestamp, updateDoc, arrayUnion, onSnapshot } from 'firebase/firestore';
 import BottomNav from '../components/BottomNav';
+import NotificationBell from '../components/NotificationBell';
+import { useUid } from '../../lib/auth';
+import { pushNotification } from '../../lib/notifications';
 
 const COLORS = ['#6C63FF','#00D4FF','#ff5c35','#c8f135','#f59e0b','#ec4899','#10b981'];
 const getColor = (uid) => COLORS[(uid?.charCodeAt(0) || 0) % COLORS.length];
 const ADMIN_PASSWORD = 'deeplooop';
 
 export default function ChatPage() {
+  const uid = useUid();
   const [questions, setQuestions] = useState([]);
   const [newQ, setNewQ] = useState('');
   const [posting, setPosting] = useState(false);
@@ -66,23 +70,14 @@ export default function ChatPage() {
     setNickDraft('');
   };
 
-  const getDeviceId = () => {
-    let id = localStorage.getItem('vitloop_device_id');
-    if (!id) {
-      id = 'dev_' + Math.random().toString(36).substr(2, 12);
-      localStorage.setItem('vitloop_device_id', id);
-    }
-    return id;
-  };
-
   const postQuestion = async () => {
-    if (!newQ.trim()) return;
+    if (!newQ.trim() || !uid) return;
     setPosting(true);
     try {
       await addDoc(collection(db, 'needboard'), {
         question: newQ,
         askedBy: nickname,
-        askedByUid: getDeviceId(),
+        askedByUid: uid,
         askedByPhoto: null,
         replies: [],
         createdAt: serverTimestamp(),
@@ -93,17 +88,51 @@ export default function ChatPage() {
   };
 
   const postReply = async (qId) => {
-    if (!replyText[qId]?.trim()) return;
+    if (!replyText[qId]?.trim() || !uid) return;
+    const q = questions.find(x => x.id === qId);
+    const text = replyText[qId];
     const ref = doc(db, 'needboard', qId);
+
     await updateDoc(ref, {
       replies: arrayUnion({
-        text: replyText[qId],
+        text,
         by: nickname,
-        byUid: getDeviceId(),
+        byUid: uid,
         byPhoto: null,
         at: new Date().toISOString(),
       })
     });
+
+    if (q) {
+      // Notify the person who asked (if it wasn't them replying to themselves)
+      if (q.askedByUid && q.askedByUid !== uid) {
+        pushNotification({
+          userId: q.askedByUid,
+          type: 'help_reply',
+          title: 'New reply on your question',
+          body: `${nickname}: ${text}`,
+          link: '/chat',
+          fromUid: uid,
+        });
+      }
+      // Also nudge anyone else who's already replied in this thread
+      const otherRepliers = new Set(
+        (q.replies || [])
+          .map(r => r.byUid)
+          .filter(id => id && id !== uid && id !== q.askedByUid)
+      );
+      otherRepliers.forEach(otherUid => {
+        pushNotification({
+          userId: otherUid,
+          type: 'help_reply',
+          title: 'New reply on a thread you replied to',
+          body: `${nickname}: ${text}`,
+          link: '/chat',
+          fromUid: uid,
+        });
+      });
+    }
+
     setReplyText(prev => ({ ...prev, [qId]: '' }));
     setOpenReply(null);
   };
@@ -127,8 +156,8 @@ export default function ChatPage() {
         <span onClick={handleSecretTap} style={{ color: '#a78bfa', fontSize: '14px', fontWeight: '600', userSelect: 'none', cursor: 'default' }}>💬 Help Board</span>
         {isAdmin && <span style={{ background: 'rgba(255,92,53,0.2)', color: '#ff5c35', border: '1px solid rgba(255,92,53,0.4)', borderRadius: '6px', fontSize: '10px', fontWeight: '700', padding: '2px 8px' }}>ADMIN</span>}
 
-        {/* Nickname button */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <NotificationBell uid={uid} />
           <button onClick={() => { setShowNickInput(!showNickInput); setNickDraft(nickname === 'Anonymous Vitian' ? '' : nickname); }}
             style={{
               background: 'rgba(108,99,255,0.15)',
@@ -148,7 +177,6 @@ export default function ChatPage() {
         </div>
       </nav>
 
-      {/* Nickname input dropdown */}
       {showNickInput && (
         <div style={{
           position: 'sticky',
@@ -183,7 +211,6 @@ export default function ChatPage() {
 
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px 16px' }}>
 
-        {/* Ask box */}
         <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.1), rgba(0,212,255,0.06))', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '20px', padding: '20px', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
             <span style={{ fontSize: '18px' }}>🎓</span>
@@ -216,7 +243,6 @@ export default function ChatPage() {
           return (
             <div key={q.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '14px', padding: '14px', marginBottom: '10px', border: '1px solid rgba(108,99,255,0.12)' }}>
 
-              {/* Question header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <div style={{ width: 28, height: 28, borderRadius: '50%', background: getColor(q.askedByUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '13px', flexShrink: 0 }}>🎓</div>
                 <span style={{ color: '#a78bfa', fontSize: '12px', fontWeight: '600' }}>{q.askedBy || 'Anonymous Vitian'}</span>
@@ -227,7 +253,6 @@ export default function ChatPage() {
 
               <p style={{ color: '#e2e8f0', fontSize: '14px', margin: '0 0 10px', lineHeight: '1.5' }}>{q.question}</p>
 
-              {/* Replies */}
               {visibleReplies.map((r, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', padding: '8px 10px', marginBottom: '6px', borderLeft: '3px solid #6C63FF' }}>
                   <div style={{ width: 22, height: 22, borderRadius: '50%', background: getColor(r.byUid), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '10px', flexShrink: 0 }}>🎓</div>
@@ -241,7 +266,6 @@ export default function ChatPage() {
                 </div>
               ))}
 
-              {/* Show more / less replies */}
               {replies.length > 1 && (
                 <button onClick={() => toggleReplies(q.id)}
                   style={{ background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '8px', padding: '5px 12px', color: '#a78bfa', fontSize: '11px', fontWeight: '600', cursor: 'pointer', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -249,7 +273,6 @@ export default function ChatPage() {
                 </button>
               )}
 
-              {/* Action buttons */}
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button onClick={() => setOpenReply(openReply === q.id ? null : q.id)}
                   style={{ background: 'transparent', border: '1px solid rgba(108,99,255,0.3)', color: '#a78bfa', borderRadius: '8px', padding: '5px 12px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }}>
@@ -263,7 +286,6 @@ export default function ChatPage() {
                 )}
               </div>
 
-              {/* Reply input */}
               {openReply === q.id && (
                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                   <input value={replyText[q.id] || ''} onChange={e => setReplyText(prev => ({ ...prev, [q.id]: e.target.value }))}

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import BottomNav from './components/BottomNav';
+import AnnouncementBanner from './components/AnnouncementBanner';
 
 function NicknameButton() {
   const [nickname, setNickname] = useState('');
@@ -53,7 +54,6 @@ export default function Home() {
     if (saved) {
       setNickname(saved);
     } else {
-      // Show popup after 1 second if no nickname set
       setTimeout(() => setShowNicknamePopup(true), 800);
     }
   }, []);
@@ -72,6 +72,10 @@ export default function Home() {
 
   const funNicknames = ['Jupiter', 'Naruto', 'Shadow', 'Phoenix', 'Cosmos', 'Ninja', 'Storm', 'Echo'];
 
+  // 🔧 Swapped order: Tribe (formerly "Find a Friend / Vibe Match") now sits
+  // where Faculty Review used to be — Faculty Review moved down one spot.
+  // Also updated Tribe's tag from "Coming Soon" to "Live Now" since it's a
+  // real, working feature now, and refreshed its title/description.
   const features = [
     {
       href: '/chat',
@@ -96,6 +100,17 @@ export default function Home() {
       tagBg: 'rgba(200,241,53,0.15)',
     },
     {
+      href: '/profile',
+      emoji: '🫂',
+      title: 'Tribe',
+      desc: 'Connect with VITians who match your vibe. Find your gang, new friends, or a hangout buddy — all anonymous.',
+      color1: '#ec4899',
+      color2: '#a855f7',
+      tag: 'Live Now',
+      tagColor: '#ec4899',
+      tagBg: 'rgba(236,72,153,0.15)',
+    },
+    {
       href: '/looprate',
       emoji: '⭐',
       title: 'Faculty Review',
@@ -105,17 +120,6 @@ export default function Home() {
       tag: 'Rate Faculty',
       tagColor: '#f59e0b',
       tagBg: 'rgba(245,158,11,0.15)',
-    },
-    {
-      href: '/profile',
-      emoji: '🤝',
-      title: 'Find a Friend',
-      desc: 'Connect with VITians who match your vibe. List your interests and find your people on campus.',
-      color1: '#ec4899',
-      color2: '#a855f7',
-      tag: 'Coming Soon',
-      tagColor: '#ec4899',
-      tagBg: 'rgba(236,72,153,0.15)',
     },
   ];
 
@@ -149,7 +153,6 @@ export default function Home() {
             position: 'relative',
             overflow: 'hidden',
           }}>
-            {/* Glow */}
             <div style={{ position: 'absolute', top: '-40px', left: '50%', transform: 'translateX(-50%)', width: '200px', height: '150px', background: 'rgba(108,99,255,0.15)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }}/>
 
             <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎭</div>
@@ -163,7 +166,6 @@ export default function Home() {
               🔒 Don't use your real name — stay anonymous!
             </p>
 
-            {/* Quick suggestions */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', marginBottom: '16px' }}>
               {funNicknames.map(n => (
                 <button key={n} onClick={() => setNickDraft(n)}
@@ -183,7 +185,6 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Input */}
             <input
               value={nickDraft}
               onChange={e => setNickDraft(e.target.value)}
@@ -206,7 +207,6 @@ export default function Home() {
               autoFocus
             />
 
-            {/* Save button */}
             <button onClick={() => saveNickname()}
               style={{
                 width: '100%',
@@ -227,7 +227,6 @@ export default function Home() {
               🚀 Enter VITLoop as "{nickDraft || '...'}"
             </button>
 
-            {/* Skip */}
             <button onClick={() => saveNickname(true)}
               style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>
               Skip for now (enter as Anonymous Vitian)
@@ -270,6 +269,11 @@ export default function Home() {
         </div>
         <NicknameButton />
       </nav>
+
+      {/* 🔧 Admin-editable announcement — shows nothing for regular users
+          until you publish one, and shows a subtle "+ Add announcement"
+          prompt only when you're in admin mode. */}
+      <AnnouncementBanner />
 
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '20px 16px' }}>
 
