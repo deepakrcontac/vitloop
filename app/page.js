@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import BottomNav from './components/BottomNav';
 import AnnouncementBanner from './components/AnnouncementBanner';
+import InstallPrompt from './components/InstallPrompt';
+import FullscreenButton from './components/FullscreenButton';
 
 function NicknameButton() {
   const [nickname, setNickname] = useState('');
@@ -72,10 +74,6 @@ export default function Home() {
 
   const funNicknames = ['Jupiter', 'Naruto', 'Shadow', 'Phoenix', 'Cosmos', 'Ninja', 'Storm', 'Echo'];
 
-  // 🔧 Swapped order: Tribe (formerly "Find a Friend / Vibe Match") now sits
-  // where Faculty Review used to be — Faculty Review moved down one spot.
-  // Also updated Tribe's tag from "Coming Soon" to "Live Now" since it's a
-  // real, working feature now, and refreshed its title/description.
   const features = [
     {
       href: '/chat',
@@ -267,13 +265,21 @@ export default function Home() {
             VIT<span style={{ color: '#ff5c35' }}>Loop</span>
           </span>
         </div>
-        <NicknameButton />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <FullscreenButton />
+          <NicknameButton />
+        </div>
       </nav>
 
       {/* 🔧 Admin-editable announcement — shows nothing for regular users
           until you publish one, and shows a subtle "+ Add announcement"
           prompt only when you're in admin mode. */}
       <AnnouncementBanner />
+
+      {/* 🔧 "Add to Home Screen" prompt — the real fullscreen solution,
+          especially on iPhone. Shows an install button on Android/Chrome,
+          and step-by-step instructions on iOS Safari. */}
+      <InstallPrompt />
 
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '20px 16px' }}>
 
