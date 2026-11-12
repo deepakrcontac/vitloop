@@ -11,6 +11,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "VITLoop",
   },
+  other: {
+    "google-adsense-account": "ca-pub-2873280188849738",
+  },
 };
 
 export const viewport: Viewport = {
@@ -27,6 +30,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2873280188849738"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body>
         <AuthInit />
         {children}
