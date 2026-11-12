@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import AuthInit from "./components/AuthInit";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "VITLoop - Campus Marketplace",
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body>
         <AuthInit />
         {children}
+        <Analytics />
       </body>
     </html>
   );
